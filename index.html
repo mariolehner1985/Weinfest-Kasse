@@ -1,0 +1,970 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#6B1E43">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Weinfest-Kassa">
+<title>Weinfest-Kassa</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%236B1E43'/%3E%3Cpath d='M11 6h10l-1.3 8.5a3.7 3.7 0 0 1-7.4 0zM16 18v7M12 25h8' fill='none' stroke='white' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head><body>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;700&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one-hand phone kassa — product grid by category, cart bar + tab bar fixed at the bottom */
+:root{
+  --bg:#F3F4F1; --surface:#FFFFFF; --sunk:#E7E9E3; --fg:#1E2320; --muted:#5F6862; --line:#D5D9D1;
+  --grape:#6B1E43; --grape-soft:#F1E3EA; --on-grape:#FFFFFF;
+  --vine:#3E6B3A; --gold:#C9A227; --rose:#D9839A; --red:#8E1F2E; --sturm:#B9A15A;
+  --good:#2F7A45; --bad:#B23A3A; --wa:#1F8F4E; --on-wa:#FFFFFF;
+  --display:"Zilla Slab",Georgia,serif; --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#141715; --surface:#1D211E; --sunk:#262B27; --fg:#E9ECE7; --muted:#9BA59E; --line:#343A35;
+  --grape:#C9578C; --grape-soft:#3A1F2C; --on-grape:#140B10;
+  --vine:#7FB077; --gold:#E0BE4E; --rose:#E59AAE; --red:#D2566A; --sturm:#D3BE7A;
+  --good:#6BC385; --bad:#E57373; --wa:#3DBE6E; --on-wa:#0B1A10; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141715; --surface:#1D211E; --sunk:#262B27; --fg:#E9ECE7; --muted:#9BA59E; --line:#343A35;
+  --grape:#C9578C; --grape-soft:#3A1F2C; --on-grape:#140B10;
+  --vine:#7FB077; --gold:#E0BE4E; --rose:#E59AAE; --red:#D2566A; --sturm:#D3BE7A;
+  --good:#6BC385; --bad:#E57373; --wa:#3DBE6E; --on-wa:#0B1A10; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45;-webkit-tap-highlight-color:transparent}
+button,input,select{font:inherit;color:inherit}
+.num{font-variant-numeric:tabular-nums}
+.wrap{max-width:760px;margin:0 auto;padding-inline:16px;padding-block:16px 200px}
+header.top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+h1{font-family:var(--display);font-weight:700;font-size:1.75rem;margin:0;color:var(--grape);text-wrap:balance}
+h2{font-family:var(--display);font-weight:700;font-size:1.25rem;margin:22px 0 10px;text-wrap:balance}
+h3{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:20px 0 8px;font-weight:700}
+.sub{color:var(--muted);font-size:.85rem}
+.banner{background:var(--grape-soft);color:var(--fg);border-radius:10px;padding:10px 12px;font-size:.85rem;margin-bottom:12px}
+/* product grid */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.prod{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;min-height:74px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);cursor:pointer;min-width:0}
+.prod:active{transform:scale(.98)}
+.prod:focus-visible,.btn:focus-visible,.tab:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--grape);outline-offset:2px}
+.prod .n{font-weight:600;line-height:1.2;overflow-wrap:anywhere}
+.prod .u{font-size:.78rem;color:var(--muted)}
+.prod .p{margin-top:auto;font-weight:700}
+.prod .cnt{position:absolute;top:6px;right:6px;min-width:24px;height:24px;border-radius:12px;background:var(--grape);color:var(--on-grape);font-size:.8rem;font-weight:700;display:grid;place-items:center;padding:0 6px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle;border:1px solid var(--line)}
+.prod.entry{background:var(--grape-soft);border-color:transparent}
+/* bottom bars */
+.dock{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);z-index:10}
+.cartbar{display:flex;align-items:center;gap:10px;padding:10px 16px;max-width:760px;margin:0 auto;border-bottom:1px solid var(--line)}
+.cartbar .btn{min-height:50px;padding:10px 18px;font-size:1rem}
+.cartbar .sum{font-family:var(--display);font-size:1.5rem;font-weight:700}
+.cartbar .meta{font-size:.8rem;color:var(--muted)}
+.tabs{display:grid;grid-auto-columns:1fr;grid-auto-flow:column;max-width:760px;margin:0 auto}
+@media (max-width:420px){.tab{font-size:.78rem}}
+textarea{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px;width:100%;min-height:96px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;word-break:break-all;resize:vertical}
+.steps{display:grid;gap:8px;margin:0;padding:0;list-style:none;counter-reset:s}
+.steps li{display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start}
+.steps li::before{counter-increment:s;content:counter(s);width:28px;height:28px;border-radius:50%;background:var(--grape-soft);color:var(--grape);font-weight:700;display:grid;place-items:center}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:10px}
+.pill{display:inline-block;font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--sunk);color:var(--muted)}
+.pill.open{background:var(--grape-soft);color:var(--grape)}
+.tab{background:none;border:0;min-height:72px;padding:10px 4px 12px;font-size:.95rem;font-weight:700;color:var(--muted);cursor:pointer;border-top:4px solid transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.tab svg{width:26px;height:26px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tab[aria-selected="true"]{color:var(--grape);border-top-color:var(--grape);background:var(--grape-soft)}
+/* station switcher */
+.stations{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin:0 -16px 6px;padding-inline:16px;scrollbar-width:none}
+.st{flex:0 0 auto;min-height:48px;padding:10px 18px;border-radius:24px;border:1px solid var(--line);background:var(--surface);font-weight:700;font-size:1rem;cursor:pointer}
+.st[aria-pressed="true"]{background:var(--grape);border-color:var(--grape);color:var(--on-grape)}
+.st.add{border-style:dashed;color:var(--muted)}
+.sthead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:4px}
+.pick{display:flex;flex-wrap:wrap;gap:6px}
+.pick button{border:1px solid var(--line);background:var(--surface);border-radius:18px;padding:7px 12px;font-size:.88rem;cursor:pointer}
+.pick button[aria-pressed="true"]{background:var(--grape-soft);border-color:var(--grape);font-weight:600}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 14px;font-weight:600;cursor:pointer}
+.btn.primary{background:var(--grape);border-color:var(--grape);color:var(--on-grape)}
+.btn.ghost{background:none}
+.btn.danger{color:var(--bad);border-color:var(--bad);background:none}
+.btn:disabled{opacity:.45;cursor:default}
+.grow{flex:1}
+/* sheet */
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.panel{background:var(--bg);width:100%;max-width:560px;max-height:90%;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px))}
+.line{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.line .nm{flex:1;min-width:0;overflow-wrap:anywhere}
+.qty{display:flex;align-items:center;gap:6px}
+.qty button{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--surface);font-weight:700;cursor:pointer}
+.total{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--display);font-size:1.6rem;font-weight:700;margin:12px 0}
+.given{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.change{display:flex;justify-content:space-between;padding:10px 12px;border-radius:10px;background:var(--sunk);font-weight:600}
+/* forms */
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.field{display:flex;flex-direction:column;gap:3px;min-width:0}
+.field label{font-size:.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+input[type=text],input[type=number],select{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+.item{display:grid;grid-template-columns:1fr 80px 84px 84px 36px;gap:6px;align-items:end;padding:10px 0;border-bottom:1px solid var(--line)}
+.item.wine{grid-template-columns:1fr 70px 80px 76px 76px 36px}
+@media (max-width:560px){
+  .item,.item.wine{grid-template-columns:1fr 1fr 36px}
+  .item .f-name,.item.wine .f-name{grid-column:1 / 3}
+}
+.newform{display:grid;grid-template-columns:1.1fr 2fr .9fr .8fr .8fr;gap:8px;align-items:end;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px}
+.newform .nw-st,.newform .nw-add,.newform .nw-newcat{grid-column:1 / -1}
+.newform .nw-add{min-height:48px;font-size:1rem}
+@media (max-width:560px){.newform{grid-template-columns:1fr 1fr 1fr}.newform .nw-name{grid-column:1 / -1}.newform .field:first-child{grid-column:1 / -1}}
+.arr-cat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:6px 12px;margin-top:10px}
+.arr-head,.arr-item{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:52px}
+.arr-head{border-bottom:1px solid var(--line)}
+.arr-item+.arr-item{border-top:1px dashed var(--line)}
+.arr-item>span:first-child{min-width:0;overflow-wrap:anywhere}
+.mvs{display:flex;gap:6px;flex:0 0 auto}
+.mv{width:44px;height:44px;border-radius:10px;border:1px solid var(--line);background:var(--bg);font-size:1.2rem;font-weight:700;cursor:pointer}
+.mv:disabled{opacity:.3;cursor:default}
+.mv:focus-visible{outline:2px solid var(--grape);outline-offset:2px}
+.btn.wa{display:inline-flex;align-items:center;gap:8px;text-decoration:none;background:var(--wa);border-color:var(--wa);color:var(--on-wa)}
+.btn.wa.big{min-height:54px;font-size:1.05rem;justify-content:center;width:100%;border-radius:12px}
+.btn.wa[aria-disabled="true"]{opacity:.45;pointer-events:none}
+details.cf summary,details.more summary{cursor:pointer;color:var(--muted);font-size:.88rem;padding:4px 0}
+details.more summary{color:var(--fg);font-size:1rem}
+details.cf[open]{display:grid;gap:8px}
+details.more[open]{gap:12px}
+.btn.wa svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linejoin:round}
+.x{width:36px;height:38px;border:0;background:none;color:var(--bad);font-size:1.3rem;cursor:pointer}
+/* report */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px}
+.kpi .l{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
+.kpi .v{font-family:var(--display);font-size:1.45rem;font-weight:700;margin-top:2px}
+.kpi.hero{background:var(--grape);border-color:var(--grape);color:var(--on-grape)}
+.kpi.hero .l{color:var(--on-grape);opacity:.85}
+.tblw{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{padding:8px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left;white-space:normal}
+th{font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+tfoot td{font-weight:700;border-top:2px solid var(--line)}
+.pos{color:var(--good)} .neg{color:var(--bad)}
+.bar{height:8px;border-radius:4px;background:var(--sunk);overflow:hidden;margin-top:4px}
+.bar>i{display:block;height:100%;background:var(--grape)}
+.pl td{font-size:.95rem}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:20px;text-align:center;color:var(--muted)}
+.recent{font-size:.85rem}
+.recent .line{gap:8px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(165px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:20px;font-weight:600;z-index:30;font-size:.9rem}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap" id="app"><p class="sub">Wird geladen …</p></div>
+
+<div class="dock">
+  <div class="cartbar" id="cartbar"></div>
+  <nav class="tabs" role="tablist" id="nav"></nav>
+</div>
+<div id="sheet" hidden></div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+const EUR=new Intl.NumberFormat('de-AT',{style:'currency',currency:'EUR'});
+const eur=v=>EUR.format(v||0);
+const n1=v=>new Intl.NumberFormat('de-AT',{maximumFractionDigits:1}).format(v||0);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const uid=()=>Math.random().toString(36).slice(2,9);
+const BASE_CATS=[['wein','Weine'],['gin','Gin & Bar'],['getraenk','Getränke'],['essen','Essen']];
+function cats(){return [...BASE_CATS,...((S.config&&S.config.extraCats)||[]).map(c=>[c.id,c.label])]}
+function unitFor(k){return CATNEW[k]?CATNEW[k][2]:(((S.config&&S.config.extraCats)||[]).find(c=>c.id===k)?.unit||'')}
+const CATNEW={wein:['Wein','Neuer Wein','1/8 l'],gin:['Bar-Drink','Neuer Drink','4 cl'],getraenk:['Getränk','Neues Getränk',''],essen:['Speise','Neue Speise','']};
+const ARTEN={weiss:['Weiß','var(--gold)'],rot:['Rot','var(--red)'],rose:['Rosé','var(--rose)'],sturm:['Sturm','var(--sturm)']};
+const ENTRY=[['e_normal','Eintritt normal','normal'],['e_red','Eintritt ermäßigt','reduced'],['e_free','Eintritt kostenlos',null]];
+const DEFAULT={name:'Weinfest',entry:{normal:8,reduced:5},items:[
+ {id:'w1',cat:'wein',name:'Grüner Veltliner',unit:'1/8 l',art:'weiss',price:2.8,cost:0.9},
+ {id:'w2',cat:'wein',name:'Zweigelt',unit:'1/8 l',art:'rot',price:3,cost:1},
+ {id:'w3',cat:'wein',name:'Sturm',unit:'1/4 l',art:'sturm',price:3.5,cost:1.2},
+ {id:'w4',cat:'wein',name:'Gespritzter',unit:'1/4 l',art:'weiss',price:3.2,cost:0.8},
+ {id:'b1',cat:'gin',name:'Gin Tonic',unit:'4 cl',price:8.5,cost:2.2},
+ {id:'b2',cat:'gin',name:'Gin Tonic Premium',unit:'4 cl',price:10,cost:3},
+ {id:'g1',cat:'getraenk',name:'Mineral',unit:'0,5 l',price:2.5,cost:0.4},
+ {id:'g2',cat:'getraenk',name:'Apfelsaft gespritzt',unit:'0,5 l',price:3,cost:0.6},
+ {id:'g3',cat:'getraenk',name:'Kaffee',unit:'',price:2.5,cost:0.3},
+ {id:'s1',cat:'essen',name:'Leberkässemmerl',unit:'',price:3.8,cost:1.4},
+ {id:'s2',cat:'essen',name:'Brettljause',unit:'',price:9.5,cost:3.8},
+ {id:'s3',cat:'essen',name:'Liptauerbrot',unit:'',price:3.5,cost:0.9}]};
+
+const ENTRY_IDS=ENTRY.map(e=>e[0]);
+function defaultStations(items){const ids=cs=>items.filter(i=>cs.includes(i.cat)).map(i=>i.id);return [
+  {id:'weinbar',name:'Weinbar',items:[...ENTRY_IDS,...ids(['wein','getraenk'])]},
+  {id:'ginbar',name:'Ginbar',items:ids(['gin','getraenk'])},
+  {id:'kellner',name:'Kellner',items:ids(['wein','gin','getraenk','essen'])}]}
+DEFAULT.stations=defaultStations(DEFAULT.items);
+const S={config:null,orders:[],costs:[],imports:[],mode:null,loaded:false,shared:false,tab:'kassa',cart:{},given:null,station:null,editSt:false};
+function ensureStations(){if(S.config&&!Array.isArray(S.config.stations))S.config.stations=defaultStations(S.config.items||[])}
+function curStation(){ensureStations();const st=S.config.stations;if(!st.length)return null;
+  if(!S.station){try{S.station=localStorage.getItem('wf_station')}catch{}}
+  return st.find(s=>s.id===S.station)||st[0]}
+function setStation(id){S.station=id;S.cart={};S.editSt=false;S.arrange=false;try{localStorage.setItem('wf_station',id)}catch{}render()}
+let db=null,downloads=null;
+
+/* ---------- storage: shared db, or this-device fallback ---------- */
+const LS={get(k,d){try{const v=localStorage.getItem('wf_'+k);return v?JSON.parse(v):d}catch{return d}},set(k,v){try{localStorage.setItem('wf_'+k,JSON.stringify(v))}catch{}}};
+let cfgQueue=Promise.resolve(),cfgTimer=null;
+function saveConfig(){
+  clearTimeout(cfgTimer);
+  cfgTimer=setTimeout(()=>{
+    const snap=JSON.parse(JSON.stringify(S.config));
+    if(S.mode==='central'){cfgQueue=cfgQueue.then(()=>db.doc('config/main').set(snap)).catch(()=>toast('Speichern fehlgeschlagen – bitte erneut versuchen'))}
+    else LS.set('config',snap);
+  },400);
+}
+const central=()=>S.mode==='central';
+const coadmin=()=>S.mode==='offline'&&S.role==='coadmin';
+const isAdmin=()=>central()||coadmin();
+function deviceId(){let d=LS.get('device',null);if(!d){d='d'+Date.now().toString(36)+uid();LS.set('device',d)}return d}
+async function addOrder(o){
+  if(central()){try{await db.collection('orders').add(o)}catch(e){toast(e&&e.code==='quota_exceeded'?'Speicher voll – alte Bons löschen':'Bon nicht gespeichert – nochmal versuchen');return false}}
+  else{o.id='o'+deviceId()+'-'+Date.now().toString(36)+uid();o.device=deviceId();o.helper=LS.get('helper','');o.sent=false;S.orders.push(o);LS.set('orders',S.orders);render()}
+  return true;
+}
+async function delOrder(id){
+  if(central()){try{await db.doc('orders/'+id).delete()}catch{toast('Löschen fehlgeschlagen')}}
+  else{S.orders=S.orders.filter(o=>o.id!==id);LS.set('orders',S.orders);render()}
+}
+async function addCost(c){
+  if(central()){try{await db.collection('costs').add(c)}catch{toast('Kosten nicht gespeichert')}}
+  else{c.id=uid();S.costs.push(c);LS.set('costs',S.costs);render()}
+}
+async function delCost(id){
+  if(central()){try{await db.doc('costs/'+id).delete()}catch{toast('Löschen fehlgeschlagen')}}
+  else{S.costs=S.costs.filter(c=>c.id!==id);LS.set('costs',S.costs);render()}
+}
+
+/* ---------- codes: Einrichtung (Sortiment → Helfer) und Abschluss (Bons → Zentrale) ---------- */
+function toB64(u8){let s='';for(let i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(s)}
+function fromB64(b){const s=atob(b),u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u}
+async function pack(obj){
+  const bytes=new TextEncoder().encode(JSON.stringify(obj));
+  if(window.CompressionStream){try{const buf=await new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer();return 'WFZ1.'+toB64(new Uint8Array(buf))+'.'}catch{}}
+  return 'WFJ1.'+toB64(bytes)+'.';
+}
+async function unpack(text){
+  const t=String(text||'');if(!/WF[ZJ]1\./.test(t))throw new Error('Kein gültiger Code gefunden. Bitte den ganzen Text einfügen, beginnend mit „WF“.');
+  const m=t.match(/WF([ZJ])1\.([A-Za-z0-9+/=\s]+?)\./);
+  if(!m)throw new Error('Der Code ist unvollständig – das Ende fehlt. Bitte den ganzen Code erneut kopieren.');m[2]=m[2].replace(/\s+/g,'');
+  let bytes;try{bytes=fromB64(m[2])}catch{throw new Error('Der Code ist unvollständig. Bitte erneut kopieren.')}
+  if(m[1]==='Z'){if(!window.DecompressionStream)throw new Error('Dieser Browser kann den Code nicht lesen. Bitte am Handy mit aktuellem Chrome oder Safari öffnen.');
+    try{bytes=new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer())}catch{throw new Error('Der Code ist unvollständig. Bitte erneut kopieren.')}}
+  try{return JSON.parse(new TextDecoder().decode(bytes))}catch{throw new Error('Der Code ist beschädigt. Bitte erneut kopieren.')}
+}
+function copyText(btn,ta){
+  const ok=()=>{btn.textContent='Kopiert ✓';setTimeout(()=>btn.textContent='Code kopieren',2000)};
+  try{navigator.clipboard.writeText(ta.value).then(ok,()=>{ta.select();toast('Text markiert – jetzt kopieren')})}catch{ta.select();toast('Text markiert – jetzt kopieren')}
+}
+
+async function init(){
+  try{db=window.claude?.use?await window.claude.use('db'):null}catch{db=null}
+  try{downloads=window.claude?.use?await window.claude.use('downloads'):null}catch{downloads=null}
+  let canWrite=false;
+  if(db){try{const user=await window.claude.use('user');if(user){canWrite=(await user.isOwner())||(await user.can('data.write'))===true}}catch{}}
+  if(db&&canWrite){
+    S.mode='central';S.shared=true;let got=0;const done=()=>{if(++got>=4){S.loaded=true}render()};
+    let a=false,b=false,c=false,d=false;
+    db.doc('config/main').onSnapshot(s=>{S.config=s.exists?JSON.parse(JSON.stringify(s.data())):null;if(!a){a=true;done()}else softRender()},()=>{});
+    db.collection('orders').onSnapshot(q=>{S.orders=q.docs.map(d=>({id:d.id,...d.data()}));if(!b){b=true;done()}else softRender()},()=>{});
+    db.collection('costs').onSnapshot(q=>{S.costs=q.docs.map(d=>({id:d.id,...d.data()}));if(!c){c=true;done()}else softRender()},()=>{});
+    db.doc('settings/admin').onSnapshot(s=>{S.adminPin=s.exists?String(s.data().pinHash||''):'';softRender()},()=>{});
+    db.collection('notes').onSnapshot(q=>{S.notesC=q.docs.map(d=>({id:d.id,...d.data()}));softRender()},()=>{});
+    db.collection('imports').onSnapshot(q=>{S.imports=q.docs.map(d=>({id:d.id,...d.data()}));if(!d){d=true;done()}else softRender()},()=>{});
+  }else{
+    // Helfer-Kassa: Bons bleiben auf diesem Gerät bis zum Abschluss
+    S.mode='offline';S.tab='kassa';S.role=LS.get('role','helper');if(S.role==='coadmin'&&!LS.get('baseConfig',null)&&LS.get('config',null))LS.set('baseConfig',LS.get('config',null));
+    S.config=LS.get('config',null);S.orders=LS.get('orders',[]);S.costs=[];S.loaded=true;render();
+    if(db&&S.role!=='coadmin'){try{const s=await db.doc('config/main').get();if(s.exists){S.config=JSON.parse(JSON.stringify(s.data()));LS.set('config',S.config);render()}}catch{}}
+  }
+}
+// don't rebuild the Artikel form while someone is typing in it
+function softRender(){const ae=document.activeElement;if(S.tab==='helfer'||(ae&&ae.closest&&ae.closest('#app')&&ae.matches('input,select,textarea')))return renderCart();render()}
+
+/* ---------- helpers ---------- */
+function catalog(){
+  const c=S.config;if(!c)return {};
+  const m={};
+  ENTRY.forEach(([id,name,k])=>m[id]={id,name,cat:'eintritt',price:k?+(c.entry?.[k]||0):0,cost:0});
+  (c.items||[]).forEach(i=>m[i.id]=i);
+  return m;
+}
+function cartLines(){const cat=catalog();return Object.entries(S.cart).filter(([id,q])=>q>0&&cat[id]).map(([id,q])=>({...cat[id],qty:q}))}
+function cartTotal(){return cartLines().reduce((s,l)=>s+l.qty*(+l.price||0),0)}
+let toastT;function toast(t){const el=document.getElementById('toast');el.textContent=t;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,2200)}
+
+/* ---------- views ---------- */
+const ICONS={
+  kassa:'<rect x="3" y="10" width="18" height="10" rx="2"/><path d="M6 10V5h8v5M8 14h2M14 14h2M8 17h2M14 17h2"/>',
+  artikel:'<path d="M8 3h8l-1 7a3 3 0 0 1-6 0zM12 13v7M8.5 20h7"/>',
+  kosten:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6M9 16h4"/>',
+  auswertung:'<path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/>',
+  sammeln:'<path d="M4 4h16v5H4zM6 9v11h12V9M10 13h4"/>',
+  helfer:'<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 5.5a3 3 0 0 1 0 5.5M18 14c2 .8 3 3 3 6"/>',
+  abschluss:'<path d="M4 12l16-8-6 16-3-7zM11 13l9-9"/>'};
+const TABNAMES={kassa:'Kassa',artikel:'Artikel',kosten:'Kosten',auswertung:'Auswertung',helfer:'Helfer',sammeln:'Sammeln',abschluss:'Abschluss'};
+function renderNav(){
+  const tabs=central()?['kassa','artikel','kosten','auswertung','helfer']:coadmin()?['kassa','artikel','sammeln','auswertung']:['kassa','abschluss'];
+  if(!tabs.includes(S.tab))S.tab='kassa';
+  const nav=document.getElementById('nav');const sig=tabs.join()+'|'+S.tab;if(nav.dataset.sig===sig)return;nav.dataset.sig=sig;
+  nav.innerHTML=tabs.map(t=>`<button class="tab" role="tab" data-tab="${t}" aria-selected="${t===S.tab}"><svg viewBox="0 0 24 24">${ICONS[t]}</svg>${TABNAMES[t]}</button>`).join('');
+  nav.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;S.editSt=false;S.arrange=false;render();window.scrollTo(0,0)});
+}
+function render(){
+  const app=document.getElementById('app');
+  if(!S.loaded){app.innerHTML='<p class="sub">Wird geladen …</p>';renderCart();return}
+  renderNav();
+  const open=S.mode==='offline'?S.orders.filter(o=>!o.sent).length:0;
+  const head=`<header class="top"><h1>${esc(S.config?.name||'Weinfest')}</h1><span class="sub">${central()?'Zentrale · alle Geräte':(coadmin()?'Co-Admin · '+esc(LS.get('coName','')):'Helfer-Kassa')+(open?` · <span class="pill open">${open} offen</span>`:'')}</span></header>`;
+  if(!S.config&&S.mode==='offline'){
+    app.innerHTML=head+`<div class="card"><h2 style="margin:0">Kassa einrichten</h2>
+      <p style="margin:0">Füge hier die <strong>ganze WhatsApp-Nachricht</strong> vom Veranstalter ein: lange auf die Nachricht drücken, „Kopieren“, dann hier einfügen.</p>
+      <textarea id="setup-code" placeholder="Nachricht hier einfügen"></textarea>
+      <button class="btn primary" id="setup-go">Kassa einrichten</button><p class="sub" id="setup-err" style="margin:0"></p></div>`;
+    bindSetup();renderCart();return;
+  }
+  if(!S.config){
+    app.innerHTML=head+`<div class="empty"><p><strong>Noch kein Sortiment angelegt.</strong></p><p>Lade ein Beispiel-Sortiment (Weine, Getränke, Leberkässemmerl …) und passe danach Namen und Preise unter „Artikel“ an.</p><p class="row" style="justify-content:center"><button class="btn primary" id="seed">Beispiel-Sortiment laden</button><button class="btn" id="blank">Leer starten</button></p></div>`;
+    document.getElementById('seed').onclick=()=>{S.config=JSON.parse(JSON.stringify(DEFAULT));saveConfig();render()};
+    document.getElementById('blank').onclick=()=>{S.config={name:'Weinfest',entry:{normal:8,reduced:5},items:[]};saveConfig();S.tab='artikel';render()};
+    renderCart();return;
+  }
+  if(coadmin()&&S.tab!=='kassa'&&!S.unlocked){
+    app.innerHTML=head+`<div class="card" style="max-width:360px"><h2 style="margin:0">Co-Admin entsperren</h2><p style="margin:0">Gib deine PIN ein, um Artikel, Sammeln und Auswertung zu öffnen.</p>
+      <div class="field"><label for="pin-in">PIN</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="pin-in" autocomplete="off"></div><button class="btn primary" id="pin-go">Entsperren</button><p class="neg" id="pin-err" style="margin:0"></p></div>`;
+    const go=async()=>{const v=document.getElementById('pin-in').value;if(await pinHash(v)===LS.get('pinHash','')){S.unlocked=true;render()}else{document.getElementById('pin-err').textContent='PIN stimmt nicht.'}};
+    document.getElementById('pin-go').onclick=go;document.getElementById('pin-in').onkeydown=e=>{if(e.key==='Enter')go()};
+    renderCart();return;
+  }
+  app.innerHTML=head+({kassa:vKassa,artikel:vArtikel,kosten:vKosten,auswertung:vAuswertung,helfer:vHelfer,abschluss:vAbschluss,sammeln:vSammeln}[S.tab])();
+  bind();renderCart();
+}
+
+function prodBtn(i,extra=''){
+  const q=S.cart[i.id]||0;
+  const dot=i.art&&ARTEN[i.art]?`<span class="dot" style="background:${ARTEN[i.art][1]}"></span>`:'';
+  return `<button class="prod ${extra}" data-add="${i.id}"><span class="n">${dot}${esc(i.name)}</span>${i.unit?`<span class="u">${esc(i.unit)}</span>`:''}<span class="p num">${eur(i.price)}</span>${q?`<span class="cnt num">${q}</span>`:''}</button>`;
+}
+function vKassa(){
+  const c=catalog();const st=curStation();
+  let h=`<div class="stations" role="group" aria-label="Station">${S.config.stations.map(s=>`<button class="st" data-st="${s.id}" aria-pressed="${st&&s.id===st.id}">${esc(s.name)}</button>`).join('')}${isAdmin()?'<button class="st add" id="st-add">+ Station</button>':''}</div>`;
+  if(!st)return h+`<div class="empty">${isAdmin()?'Lege mit „+ Station“ eine Kassa-Station an, z. B. Weinbar.':'Im Einrichtungs-Code ist keine Station enthalten. Bitte einen neuen Code vom Veranstalter holen.'}</div>`;
+  if(S.editSt){
+    const all=[...ENTRY.map(([id])=>c[id]),...(S.config.items||[])];
+    h+=`<div class="sthead"><h2 style="margin:10px 0">Station bearbeiten</h2><button class="btn primary" id="st-done">Fertig</button></div>
+    <div class="field" style="max-width:320px"><label for="st-name">Name der Station</label><input type="text" id="st-name" value="${esc(st.name)}"></div>
+    <p class="sub">Tippe an, was an dieser Station verkauft wird.</p>
+    ${effCats().map(([k,l])=>{const it=effItems(k);return it.length?`<h3>${l}</h3><div class="pick">${it.map(i=>`<button data-tog="${i.id}" aria-pressed="${st.items.includes(i.id)}">${esc(i.name)}${i.unit?' · '+esc(i.unit):''}</button>`).join('')}</div>`:''}).join('')}
+    <p style="margin-top:22px"><button class="btn danger" id="st-del">Station „${esc(st.name)}“ löschen</button></p><div id="st-delbox"></div>`;
+    return h;
+  }
+  const has=id=>st.items.includes(id);
+  if(S.arrange)return h+vArrange(has);
+  h+=`<div class="sthead"><span class="sub">Station <strong>${esc(st.name)}</strong></span><span class="row" style="gap:4px"><button class="btn ghost" id="arr-open">Anordnen</button>${isAdmin()?'<button class="btn ghost" id="st-edit">Sortiment</button>':''}</span></div>`;
+  let any=0;
+  effCats().forEach(([k,l])=>{const it=effItems(k).filter(i=>has(i.id));any+=it.length;if(it.length)h+=`<h3>${esc(l)}</h3><div class="grid">${it.map(i=>prodBtn(i,k==='eintritt'?'entry':'')).join('')}</div>`});
+  if(!any)h+=`<div class="empty" style="margin-top:16px">An dieser Station ist noch nichts im Sortiment. Tippe auf „Sortiment bearbeiten“.</div>`;
+  const rec=[...S.orders].filter(o=>(o.station||'')===st.id).sort((a,b)=>(b.ts||0)-(a.ts||0)).slice(0,5);
+  if(rec.length){
+    h+=`<h3>Letzte Bons</h3><div class="recent">${rec.map(o=>`<div class="line"><span class="sub num">${new Date(o.ts).toLocaleTimeString('de-AT',{hour:'2-digit',minute:'2-digit'})}</span><span class="nm">${esc(o.lines.map(l=>l.qty+'× '+l.name).join(', '))}</span><strong class="num">${eur(o.total)}</strong>${o.sent?'<span class="pill">übermittelt</span>':`<button class="btn ghost" data-storno="${o.id}" aria-label="Bon stornieren">Storno</button>`}</div>`).join('')}</div>`;
+  }
+  return h;
+}
+function vArtikel(){
+  const c=S.config;
+  let h=`<div class="field" style="max-width:360px"><label for="f-name">Name des Festes</label><input type="text" id="f-name" value="${esc(c.name)}"></div>
+  <h2>Eintritt</h2><div class="row">
+   <div class="field" style="width:130px"><label for="e-normal">Normal €</label><input type="number" step="0.1" min="0" id="e-normal" value="${c.entry?.normal??0}"></div>
+   <div class="field" style="width:130px"><label for="e-reduced">Ermäßigt €</label><input type="number" step="0.1" min="0" id="e-reduced" value="${c.entry?.reduced??0}"></div>
+   <div class="field" style="width:130px"><label>Kostenlos</label><input type="text" value="0,00 € (wird gezählt)" disabled></div></div>
+  <h2>Neuer Artikel</h2>
+  <div class="newform">
+   <div class="field"><label for="nw-cat">Kategorie</label><select id="nw-cat">${cats().map(([k,l])=>`<option value="${k}">${esc(l)}</option>`).join('')}<option value="__new">+ Neue Kategorie …</option></select></div>
+   <div class="field nw-newcat" id="nw-newcat-wrap" hidden><label for="nw-newcat">Name der neuen Kategorie</label><input type="text" id="nw-newcat" placeholder="z. B. Süßes, Cocktails, Fassbier"></div>
+   <div class="field nw-name"><label for="nw-name">Name</label><input type="text" id="nw-name" placeholder="z. B. Welschriesling"></div>
+   <div class="field"><label for="nw-unit">Menge</label><input type="text" id="nw-unit" value="1/8 l"></div>
+   <div class="field"><label for="nw-ek">EK €</label><input type="number" step="0.05" min="0" id="nw-ek" inputmode="decimal" placeholder="0,00"></div>
+   <div class="field"><label for="nw-vk">VK €</label><input type="number" step="0.1" min="0" id="nw-vk" inputmode="decimal" placeholder="0,00"></div>
+   <div class="field nw-st"><label>Verkauf an</label><div class="pick" id="nw-st"></div></div>
+   <button class="btn primary nw-add" id="nw-add">Artikel hinzufügen</button>
+  </div>
+  <p class="sub">„Einkauf“ ist dein Einstandspreis pro verkaufter Einheit. Du kannst ihn auch nach dem Fest nachtragen – die Auswertung rechnet immer mit dem aktuellen Wert.</p>`;
+  effCats().filter(([k])=>k!=='eintritt').forEach(([k,l])=>{
+    const it=effItems(k);
+    const custom=!BASE_CATS.some(b=>b[0]===k);
+    h+=(custom?`<div class="row" style="align-items:end;margin-top:22px"><div class="field grow" style="max-width:320px"><label for="cat-${k}">Eigene Kategorie</label><input type="text" id="cat-${k}" data-catname="${k}" value="${esc(l)}" style="font-family:var(--display);font-size:1.15rem;font-weight:700"></div>${it.length?'':`<button class="btn danger" data-delcat="${k}">Kategorie löschen</button>`}</div>`:`<h2>${esc(l)}</h2>`)+it.map(i=>`<div class="item ${k==='wein'?'wine':''}" data-item="${i.id}">
+      <div class="field f-name"><label for="n-${i.id}">Bezeichnung</label><input type="text" id="n-${i.id}" data-f="name" value="${esc(i.name)}"></div>
+      ${k==='wein'?`<div class="field"><label for="a-${i.id}">Art</label><select id="a-${i.id}" data-f="art">${Object.entries(ARTEN).map(([a,[t]])=>`<option value="${a}" ${i.art===a?'selected':''}>${t}</option>`).join('')}</select></div>`:''}
+      <div class="field"><label for="u-${i.id}">Menge</label><input type="text" id="u-${i.id}" data-f="unit" value="${esc(i.unit||'')}" placeholder="z. B. 1/8 l"></div>
+      <div class="field"><label for="p-${i.id}">Preis €</label><input type="number" step="0.1" min="0" id="p-${i.id}" data-f="price" value="${i.price}"></div>
+      <div class="field"><label for="c-${i.id}">Einkauf €</label><input type="number" step="0.05" min="0" id="c-${i.id}" data-f="cost" value="${i.cost??0}"></div>
+      <button class="x" data-delitem="${i.id}" aria-label="${esc(i.name)} entfernen">×</button></div>`).join('')
+      +(it.length?'':`<p class="sub">Noch keine Artikel in dieser Kategorie.</p>`);
+  });
+  return h;
+}
+function vKosten(){
+  const tot=S.costs.reduce((s,c)=>s+(+c.amount||0),0);
+  return `<h2>Fixkosten</h2><p class="sub">Alles, was unabhängig vom Verkauf anfällt: Zelt, Musik, Gläserverleih, Deko, Strom, Werbung, AKM … Der Wareneinsatz kommt automatisch aus den Einkaufspreisen.</p>
+  <div class="row" style="align-items:end;margin:10px 0 14px">
+    <div class="field grow" style="min-width:160px"><label for="k-name">Posten</label><input type="text" id="k-name" placeholder="z. B. Zeltmiete"></div>
+    <div class="field" style="width:120px"><label for="k-amt">Betrag €</label><input type="number" step="1" min="0" id="k-amt"></div>
+    <button class="btn primary" id="k-add">Hinzufügen</button></div>
+  ${S.costs.length?`<div class="tblw"><table><thead><tr><th>Posten</th><th>Betrag</th><th></th></tr></thead><tbody>${S.costs.map(c=>`<tr><td>${esc(c.name)}</td><td class="num">${eur(c.amount)}</td><td><button class="x" data-delcost="${c.id}" aria-label="${esc(c.name)} löschen">×</button></td></tr>`).join('')}</tbody><tfoot><tr><td>Summe Fixkosten</td><td class="num">${eur(tot)}</td><td></td></tr></tfoot></table></div>`:`<div class="empty">Noch keine Kosten erfasst.</div>`}`;
+}
+
+function stats(){
+  const cat=catalog(),per={};let visitors={e_normal:0,e_red:0,e_free:0},rev=0,entryRev=0,cogs=0;
+  S.orders.forEach(o=>(o.lines||[]).forEach(l=>{
+    const cur=cat[l.id];const cost=cur?(+cur.cost||0):(+l.cost||0);
+    const r=l.qty*(+l.price||0);rev+=r;
+    if(l.cat==='eintritt'){visitors[l.id]=(visitors[l.id]||0)+l.qty;entryRev+=r;return}
+    const p=per[l.id]||(per[l.id]={id:l.id,name:cur?.name||l.name,unit:cur?.unit||l.unit||'',cat:l.cat,qty:0,rev:0,cogs:0});
+    p.qty+=l.qty;p.rev+=r;p.cogs+=l.qty*cost;cogs+=l.qty*cost;
+  }));
+  const v=visitors.e_normal+visitors.e_red+visitors.e_free;
+  const fixed=S.costs.reduce((s,c)=>s+(+c.amount||0),0);
+  return {per:Object.values(per),visitors,v,rev,entryRev,salesRev:rev-entryRev,cogs,fixed,profit:rev-cogs-fixed,bons:S.orders.length};
+}
+function vAuswertung(){
+  const s=stats();
+  if(!s.bons)return `<h2>Auswertung</h2><div class="empty">Noch keine Verkäufe. Sobald an der Kassa abgerechnet wird, erscheinen hier Besucher, Pro-Kopf-Werte und die Kosten-Nutzen-Rechnung.</div>${s.fixed?`<p class="sub" style="margin-top:12px">Erfasste Fixkosten: ${eur(s.fixed)}</p>`:''}${resetSection()}`;
+  const pk=x=>s.v?x/s.v:0;
+  const catRev=k=>s.per.filter(p=>p.cat===k).reduce((a,p)=>a+p.rev,0);
+  const catQty=k=>s.per.filter(p=>p.cat===k).reduce((a,p)=>a+p.qty,0);
+  const dbPerHead=pk(s.rev-s.cogs);
+  const be=dbPerHead>0?Math.ceil(s.fixed/dbPerHead):null;
+  const maxRev=Math.max(1,...s.per.map(p=>p.rev));
+  let h=`<h2>Überblick</h2><div class="kpis">
+   <div class="kpi hero"><div class="l">Ergebnis</div><div class="v num">${eur(s.profit)}</div></div>
+   <div class="kpi"><div class="l">Besucher</div><div class="v num">${s.v}</div></div>
+   <div class="kpi"><div class="l">Umsatz gesamt</div><div class="v num">${eur(s.rev)}</div></div>
+   <div class="kpi"><div class="l">Bons</div><div class="v num">${s.bons}</div></div></div>
+  <h2>Pro Kopf</h2>${s.v?`<div class="kpis">
+   <div class="kpi"><div class="l">Umsatz / Kopf</div><div class="v num">${eur(pk(s.rev))}</div></div>
+   <div class="kpi"><div class="l">Konsum / Kopf</div><div class="v num">${eur(pk(s.salesRev))}</div><div class="sub">ohne Eintritt</div></div>
+   <div class="kpi"><div class="l">Wein / Kopf</div><div class="v num">${n1(pk(catQty('wein')))}</div><div class="sub">Gläser · ${eur(pk(catRev('wein')))}</div></div>
+   <div class="kpi"><div class="l">Essen / Kopf</div><div class="v num">${n1(pk(catQty('essen')))}</div><div class="sub">Portionen · ${eur(pk(catRev('essen')))}</div></div>
+   <div class="kpi"><div class="l">Getränke / Kopf</div><div class="v num">${n1(pk(catQty('getraenk')))}</div><div class="sub">${eur(pk(catRev('getraenk')))}</div></div>
+   <div class="kpi"><div class="l">Gewinn / Kopf</div><div class="v num ${s.profit>=0?'pos':'neg'}">${eur(pk(s.profit))}</div></div></div>`:`<div class="empty">Es wurden noch keine Eintritte gebucht – ohne Besucherzahl gibt es keine Pro-Kopf-Werte.</div>`}
+  <h3>Besucher nach Eintritt</h3><div class="tblw"><table><thead><tr><th>Kategorie</th><th>Personen</th><th>Anteil</th><th>Erlös</th></tr></thead><tbody>
+   ${ENTRY.map(([id,name,k])=>{const q=s.visitors[id]||0;return `<tr><td>${name.replace('Eintritt ','')}</td><td class="num">${q}</td><td class="num">${s.v?Math.round(q/s.v*100):0} %</td><td class="num">${eur(q*(k?+(S.config.entry?.[k]||0):0))}</td></tr>`}).join('')}
+  </tbody><tfoot><tr><td>Gesamt</td><td class="num">${s.v}</td><td></td><td class="num">${eur(s.entryRev)}</td></tr></tfoot></table></div>
+  <h2>Stationen</h2><div class="tblw"><table><thead><tr><th>Station</th><th>Bons</th><th>Ø Bon</th><th>Umsatz</th><th>Anteil</th></tr></thead><tbody>
+   ${(()=>{const m={};S.orders.forEach(o=>{const k=o.station||'_';const cur=(S.config.stations||[]).find(s=>s.id===o.station);
+      const r=m[k]||(m[k]={name:cur?.name||o.stationName||'Ohne Station',bons:0,rev:0});r.bons++;r.rev+=+o.total||0});
+      return Object.values(m).sort((a,b)=>b.rev-a.rev).map(r=>`<tr><td>${esc(r.name)}<div class="bar"><i style="width:${s.rev?(r.rev/s.rev*100).toFixed(1):0}%"></i></div></td><td class="num">${r.bons}</td><td class="num">${eur(r.rev/r.bons)}</td><td class="num">${eur(r.rev)}</td><td class="num">${s.rev?Math.round(r.rev/s.rev*100):0} %</td></tr>`).join('')})()}
+  </tbody></table></div>
+  <h2>Artikel</h2><div class="tblw"><table><thead><tr><th>Artikel</th><th>Stück</th><th>Umsatz</th><th>Einsatz</th><th>Deckungsb.</th></tr></thead><tbody>`;
+  cats().forEach(([k,l])=>{const ps=s.per.filter(p=>p.cat===k).sort((a,b)=>b.rev-a.rev);if(!ps.length)return;
+    h+=`<tr><td colspan="5" style="font-weight:700;color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.06em">${l}</td></tr>`+ps.map(p=>`<tr><td>${esc(p.name)}${p.unit?` <span class="sub">${esc(p.unit)}</span>`:''}<div class="bar"><i style="width:${(p.rev/maxRev*100).toFixed(1)}%"></i></div></td><td class="num">${p.qty}</td><td class="num">${eur(p.rev)}</td><td class="num">${eur(p.cogs)}</td><td class="num ${p.rev-p.cogs>=0?'pos':'neg'}">${eur(p.rev-p.cogs)}</td></tr>`).join('')});
+  h+=`</tbody></table></div>
+  <h2>Kosten-Nutzen-Rechnung</h2><div class="tblw"><table class="pl"><tbody>
+   <tr><td>Eintritt</td><td class="num">${eur(s.entryRev)}</td></tr>
+   ${cats().filter(([k])=>catRev(k)||BASE_CATS.some(b=>b[0]===k)).map(([k,l])=>`<tr><td>Verkauf ${esc(l)}</td><td class="num">${eur(catRev(k))}</td></tr>`).join('')}
+   <tr><td><strong>Einnahmen gesamt</strong></td><td class="num"><strong>${eur(s.rev)}</strong></td></tr>
+   <tr><td>− Wareneinsatz</td><td class="num neg">${eur(-s.cogs)}</td></tr>
+   <tr><td><strong>Rohertrag</strong></td><td class="num"><strong>${eur(s.rev-s.cogs)}</strong></td></tr>
+   ${S.costs.map(c=>`<tr><td>− ${esc(c.name)}</td><td class="num neg">${eur(-c.amount)}</td></tr>`).join('')}
+   <tr><td>− Fixkosten gesamt</td><td class="num neg">${eur(-s.fixed)}</td></tr>
+  </tbody><tfoot><tr><td>Ergebnis</td><td class="num ${s.profit>=0?'pos':'neg'}">${eur(s.profit)}</td></tr></tfoot></table></div>
+  <div class="kpis" style="margin-top:8px">
+   <div class="kpi"><div class="l">Wareneinsatzquote</div><div class="v num">${s.salesRev?Math.round(s.cogs/s.salesRev*100):0} %</div><div class="sub">vom Verkaufsumsatz</div></div>
+   <div class="kpi"><div class="l">Break-even</div><div class="v num">${be!=null?be+' Besucher':'–'}</div><div class="sub">bei gleichem Konsum pro Kopf</div></div></div>
+  <p class="sub" style="margin-top:10px">Die Rechnung ist eine interne Übersicht vor Steuern (USt, Einkommensteuer nicht berücksichtigt).</p>
+  ${resetSection()}`;
+  return h;
+}
+
+/* ---------- Vorschläge: Änderungen des Co-Admins gegenüber seinem Ausgangsstand ---------- */
+const clone=o=>JSON.parse(JSON.stringify(o));
+function catLabel(cfg,k){const b=BASE_CATS.find(x=>x[0]===k);if(b)return b[1];const e=((cfg&&cfg.extraCats)||[]).find(x=>x.id===k);return e?e.label:k}
+function computeChanges(base,mine){
+  const ch=[];if(!mine)return ch;base=base||{items:[],stations:[],entry:{}};
+  const nm=(i)=>i.name+(i.unit?' '+i.unit:'');
+  const allItems=new Map([...(base.items||[]),...(mine.items||[])].map(i=>[i.id,i]));
+  const itemName=id=>{const e=ENTRY.find(x=>x[0]===id);if(e)return e[1];const i=allItems.get(id);return i?nm(i):id};
+  if((mine.name||'')!==(base.name||''))ch.push({grp:'Allgemein',label:'Name des Festes',detail:`${base.name||'–'} → ${mine.name}`,apply:c=>{c.name=mine.name}});
+  [['normal','Eintritt normal'],['reduced','Eintritt ermäßigt']].forEach(([k,l])=>{const a=+(base.entry?.[k]||0),b=+(mine.entry?.[k]||0);
+    if(a!==b)ch.push({grp:'Allgemein',label:l,detail:`${eur(a)} → ${eur(b)}`,apply:c=>{c.entry=c.entry||{};c.entry[k]=b}})});
+  const bc=new Map((base.extraCats||[]).map(x=>[x.id,x]));
+  (mine.extraCats||[]).forEach(x=>{const o=bc.get(x.id);
+    if(!o)ch.push({grp:'Kategorien',label:`Neue Kategorie „${x.label}“`,detail:'',apply:c=>{c.extraCats=c.extraCats||[];if(!c.extraCats.some(y=>y.id===x.id))c.extraCats.push(clone(x))}});
+    else if(o.label!==x.label)ch.push({grp:'Kategorien',label:`Kategorie umbenannt`,detail:`${o.label} → ${x.label}`,apply:c=>{const y=(c.extraCats||[]).find(y=>y.id===x.id);if(y)y.label=x.label}})});
+  const bi=new Map((base.items||[]).map(i=>[i.id,i])),mi=new Map((mine.items||[]).map(i=>[i.id,i]));
+  (mine.items||[]).forEach(i=>{const o=bi.get(i.id);
+    if(!o){ch.push({grp:'Artikel',label:`Neu: ${nm(i)}`,detail:`${catLabel(mine,i.cat)} · VK ${eur(i.price)} · EK ${eur(i.cost)}`,apply:c=>{if(!c.items.some(y=>y.id===i.id)){
+        // eigene Kategorie mitnehmen, falls sie bei der Zentrale fehlt
+        if(!BASE_CATS.some(b=>b[0]===i.cat)&&!(c.extraCats||[]).some(y=>y.id===i.cat)){const ec=(mine.extraCats||[]).find(y=>y.id===i.cat);if(ec){c.extraCats=c.extraCats||[];c.extraCats.push(clone(ec))}}
+        c.items.push(clone(i))}}});return}
+    const parts=[];const F=[['name','Name',v=>v],['unit','Menge',v=>v||'–'],['price','VK',eur],['cost','EK',eur],['art','Art',v=>(ARTEN[v]||[v])[0]],['cat','Kategorie',v=>catLabel(mine,v)]];
+    F.forEach(([f,l,fm])=>{if((o[f]??'')!==(i[f]??''))parts.push(`${l} ${fm(o[f])} → ${fm(i[f])}`)});
+    if(parts.length)ch.push({grp:'Artikel',label:`Geändert: ${nm(o)}`,detail:parts.join(' · '),apply:c=>{const y=c.items.find(y=>y.id===i.id);if(y)F.forEach(([f])=>{if((o[f]??'')!==(i[f]??''))y[f]=i[f]})}});
+  });
+  (base.items||[]).forEach(o=>{if(!mi.has(o.id))ch.push({grp:'Artikel',label:`Entfernt: ${nm(o)}`,detail:'',apply:c=>{c.items=c.items.filter(y=>y.id!==o.id);(c.stations||[]).forEach(s=>s.items=s.items.filter(x=>x!==o.id))}})});
+  const bs=new Map((base.stations||[]).map(s=>[s.id,s])),ms=new Map((mine.stations||[]).map(s=>[s.id,s]));
+  (mine.stations||[]).forEach(s=>{const o=bs.get(s.id);
+    if(!o){ch.push({grp:'Stationen',label:`Neue Station „${s.name}“`,detail:s.items.map(itemName).join(', '),apply:c=>{c.stations=c.stations||[];if(!c.stations.some(y=>y.id===s.id))c.stations.push(clone(s))}});return}
+    if(o.name!==s.name)ch.push({grp:'Stationen',label:'Station umbenannt',detail:`${o.name} → ${s.name}`,apply:c=>{const y=(c.stations||[]).find(y=>y.id===s.id);if(y)y.name=s.name}});
+    const add=s.items.filter(x=>!o.items.includes(x)),rem=o.items.filter(x=>!s.items.includes(x));
+    if(add.length||rem.length)ch.push({grp:'Stationen',label:`Sortiment ${s.name}`,detail:[...add.map(x=>'+ '+itemName(x)),...rem.map(x=>'− '+itemName(x))].join(', '),
+      apply:c=>{const y=(c.stations||[]).find(y=>y.id===s.id);if(!y)return;add.forEach(x=>{if(!y.items.includes(x))y.items.push(x)});y.items=y.items.filter(x=>!rem.includes(x))}});
+  });
+  (base.stations||[]).forEach(o=>{if(!ms.has(o.id))ch.push({grp:'Stationen',label:`Station entfernt: ${o.name}`,detail:'',apply:c=>{c.stations=(c.stations||[]).filter(y=>y.id!==o.id)}})});
+  if(JSON.stringify(base.order||null)!==JSON.stringify(mine.order||null)&&mine.order)ch.push({grp:'Allgemein',label:'Standard-Reihenfolge der Kassa',detail:'Kategorien und Artikel neu angeordnet',apply:c=>{c.order=clone(mine.order)}});
+  return ch;
+}
+// nur Vorschläge, die beim Empfänger tatsächlich etwas ändern
+function relevantChanges(base,mine,target){
+  return computeChanges(base,mine).filter(x=>{const t=clone(target);if(!Array.isArray(t.items))t.items=[];x.apply(t);return JSON.stringify(t)!==JSON.stringify(target)});
+}
+function myChanges(){ensureStations();return computeChanges(LS.get('baseConfig',null),S.config)}
+function myNotes(){return LS.get('notes',[])}
+
+/* ---------- Zentrale & Co-Admin: Codes und Einlesen ---------- */
+async function pinHash(pin){
+  const t='wf-pin:'+String(pin||'').trim();
+  try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+  catch{let h=5381;for(const c of t)h=((h<<5)+h+c.charCodeAt(0))|0;return 'x'+(h>>>0).toString(16)}
+}
+function importsList(){return central()?S.imports:LS.get('imports',[])}
+function fest(){return S.config?.name||'Weinfest'}
+function appLink(){return (S.config?.appLink||'').trim()}
+function waHref(text){return 'https://wa.me/?text='+encodeURIComponent(text)}
+const WA_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z"/></svg>';
+function waBtn(id,label){return `<a class="btn wa big" id="${id}" target="_blank" rel="noopener" aria-disabled="true">${WA_ICON}${label}</a>`}
+function armWa(id,text){const a=document.getElementById(id);if(!a)return;a.href=waHref(text);a.removeAttribute('aria-disabled')}
+function copyFallback(id,label){return `<details class="cf"><summary>Kein WhatsApp? Code kopieren</summary><textarea id="${id}-ta" readonly></textarea><button class="btn" id="${id}-copy">Code kopieren</button></details>`}
+function inviteMsg(code){const l=appLink();return `Hallo! Du kassierst beim ${fest()} mit.\n\n${l?`1. App öffnen: ${l}\n2. `:''}Bei „Kassa einrichten“ diese ganze Nachricht einfügen.\n\n${code}`}
+function coMsg(code,name){const l=appLink();return `Hallo ${name}! Du bist Co-Admin für die Kassa ${fest()}.\n\n${l?`1. App öffnen: ${l}\n2. `:''}Bei „Kassa einrichten“ diese ganze Nachricht einfügen.\n\n${code}\n\nDie PIN sage ich dir persönlich.`}
+function closeMsg(code,list,co){const n=list.length,sum=list.reduce((a,o)=>a+(+o.total||0),0);const st=[...new Set(list.map(o=>o.stationName).filter(Boolean))].join(', ');
+  const who=co?(LS.get('coName','')||'Co-Admin'):(LS.get('helper','')||'Helfer');
+  return `${co?'Sammel-Code':'Abschluss'} ${who}${st?' · '+st:''} · ${n} Bons · ${eur(sum)}\n\n${code}`}
+// Code im Hintergrund vorbereiten, damit der WhatsApp-Button sofort ein fertiger Link ist
+const prepTok={};
+async function prepare(id,makeCode,makeMsg){const tok=prepTok[id]=(prepTok[id]||0)+1;const code=await makeCode();if(tok!==prepTok[id])return null;
+  const ta=document.getElementById(id+'-ta');if(ta)ta.value=code;armWa(id+'-wa',makeMsg(code));
+  const cp=document.getElementById(id+'-copy');if(cp)cp.onclick=e=>copyText(e.target,ta);return code}
+
+function inviteCard(){
+  const l=appLink();
+  return `<h2>Helfer einladen</h2>
+  <div class="card">
+   ${central()?`<div class="field"><label for="app-link">Link zur Helfer-Kassa ${l?'<span class="pill">gespeichert</span>':''}</label><input type="text" id="app-link" inputmode="url" value="${esc(l)}" placeholder="https://…github.io/weinfest-kassa/"></div>
+   ${l?'':'<p class="sub" style="margin:0">Hier die Adresse deiner Helfer-Kassa ohne Anmeldung einfügen, z. B. https://deinname.github.io/weinfest-kassa/. Einmal reicht.</p>'}`:''}
+   ${waBtn('invite-wa','Helfer per WhatsApp einladen')}
+   <p class="sub" style="margin:0">Eine Nachricht mit Link und Einrichtungs-Code. Nach Preisänderungen einfach nochmal schicken.</p>
+   ${copyFallback('invite')}
+  </div>`;
+}
+function importCard(){
+  const imps=[...importsList()].sort((a,b)=>(b.ts||0)-(a.ts||0));
+  return `<h2>Abschlüsse einlesen</h2>
+  <div class="card"><textarea id="imp-ta" placeholder="Ganze WhatsApp-Nachricht mit dem Abschluss hier einfügen"></textarea>
+   <button class="btn primary" id="imp-check">Prüfen</button><div id="imp-prev"></div></div>
+  ${imps.length?`<h3>Eingelesen</h3><div class="tblw"><table><thead><tr><th>Von</th><th>Zeit</th><th>Neue Bons</th><th>Summe</th></tr></thead><tbody>${imps.map(i=>`<tr><td>${esc(i.helper||'Ohne Namen')}${i.coadmin?' <span class="pill">Co-Admin</span>':''}${i.stations?`<div class="sub">${esc(i.stations)}</div>`:''}</td><td class="num">${new Date(i.ts).toLocaleString('de-AT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td><td class="num">${i.count}</td><td class="num">${eur(i.total)}</td></tr>`).join('')}</tbody></table></div>`:''}`;
+}
+function notesCard(){
+  const ns=[...(S.notesC||[])].sort((a,b)=>(!!a.done-!!b.done)||((b.ts||0)-(a.ts||0)));if(!ns.length)return '';
+  const open=ns.filter(n=>!n.done).length;
+  return `<h2>Anregungen${open?` <span class="pill open">${open} offen</span>`:''}</h2>
+  <div class="card">${ns.map(n=>`<div class="line" style="${n.done?'opacity:.55':''}"><span class="nm">${esc(n.text)}<br><span class="sub">${esc(n.from||'Co-Admin')} · ${new Date(n.ts).toLocaleString('de-AT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span></span>
+    <button class="btn ghost" data-notedone="${n.id}">${n.done?'Wieder offen':'Erledigt'}</button><button class="x" data-notedel="${n.id}" aria-label="Anregung löschen">×</button></div>`).join('')}</div>`;
+}
+function vHelfer(){
+  return `${inviteCard()}
+  ${notesCard()}
+  ${importCard()}
+  <details class="card more" style="margin-top:22px" id="co-det" ${S.coOpen?'open':''}><summary><strong>Co-Admin hinzufügen</strong><br><span class="sub">Jemand, der am eigenen Handy Abschlüsse für dich sammelt</span></summary>
+   <div class="row" style="align-items:end"><div class="field grow" style="min-width:150px"><label for="co-name">Name</label><input type="text" id="co-name" placeholder="z. B. Thomas"></div>
+   <div class="field" style="width:130px"><label for="co-pin">PIN (4–8 Ziffern)</label><input type="text" inputmode="numeric" pattern="[0-9]*" id="co-pin" autocomplete="off"></div></div>
+   ${waBtn('co-wa','Co-Admin per WhatsApp einladen')}
+   <p class="sub" style="margin:0" id="co-hint">Name und PIN eintragen, dann tippen. Die PIN steht nicht in der Nachricht, sag sie ihm persönlich.</p>
+   ${copyFallback('co')}
+  </details>`;
+}
+function vSammeln(){
+  const open=S.orders.filter(o=>!o.sent),sum=a=>a.reduce((s,o)=>s+(+o.total||0),0);
+  const own=S.orders.filter(o=>!o.imported).length;
+  const notes=myNotes(),openNotes=notes.filter(n=>!n.sent).length,chg=myChanges();
+  const list=S.sendAll?S.orders:open;
+  const what=[list.length?`${list.length} Bons (${eur(sum(list))})`:'',(S.sendAll?notes.length:openNotes)?`${S.sendAll?notes.length:openNotes} Anregungen`:'',chg.length?`${chg.length} Änderungsvorschläge`:''].filter(Boolean);
+  return `<h2>Sammeln</h2>
+  <div class="kpis"><div class="kpi hero"><div class="l">Noch nicht an Zentrale</div><div class="v num">${eur(sum(open))}</div><div class="sub" style="color:inherit;opacity:.85">${open.length} Bons</div></div>
+   <div class="kpi"><div class="l">Gesammelt gesamt</div><div class="v num">${eur(sum(S.orders))}</div><div class="sub">${S.orders.length} Bons · ${own} eigene</div></div></div>
+  <h2>An die Zentrale senden</h2>
+  <div class="card">${what.length?`<p style="margin:0">Enthält: ${what.join(' · ')}</p>${waBtn('sammel-wa','Per WhatsApp an die Zentrale')}${copyFallback('sammel')}`:'<p style="margin:0">Alles übermittelt ✓</p>'}
+   ${S.orders.length&&!S.sendAll?'<p style="margin:0"><button class="btn ghost" id="sammel-all">Alle Bons nochmal senden</button></p>':''}</div>
+  <h3>Anregung notieren</h3>
+  <div class="card"><textarea id="note-ta" placeholder="z. B. Sturm geht aus – morgen 2 Kisten mehr. Ginbar braucht mehr Eis." style="min-height:70px;font:inherit"></textarea>
+   <button class="btn" id="note-add">Anregung hinzufügen</button>
+   ${notes.length?`<div>${notes.map(n=>`<div class="line"><span class="nm">${esc(n.text)}</span>${n.sent?'<span class="pill">übermittelt</span>':`<span class="pill open">neu</span><button class="x" data-delnote="${n.id}" aria-label="Anregung löschen">×</button>`}</div>`).join('')}</div>`:''}</div>
+  <h3>Deine Änderungen am Sortiment</h3>
+  <div class="card">${chg.length?`<p style="margin:0">Gehen als <strong>Vorschlag</strong> mit. Die Zentrale wählt einzeln aus, was übernommen wird.</p><div>${chg.map(c=>`<div class="line"><span class="nm"><strong>${esc(c.label)}</strong>${c.detail?`<br><span class="sub">${esc(c.detail)}</span>`:''}</span></div>`).join('')}</div>`:'<p class="sub" style="margin:0">Keine Änderungen. Ändern kannst du unter „Artikel“ oder an der Kassa unter „Sortiment“.</p>'}</div>
+  ${inviteCard()}
+  ${importCard()}
+  <h3>Dieses Handy</h3>
+  <div class="row"><button class="btn" id="re-setup">Neuen Code einfügen</button><button class="btn danger" id="co-leave">Co-Admin hier beenden</button></div><div id="opt-box"></div>`;
+}
+async function makeSammel(list,allNotes){
+  const o={t:'close',v:1,coadmin:true,device:deviceId(),helper:LS.get('coName','')||LS.get('helper',''),orders:list.map(({sent,imported,...x})=>x)};
+  const notes=myNotes().filter(n=>allNotes||!n.sent).map(({sent,...n})=>n);if(notes.length)o.notes=notes;
+  if(myChanges().length){ensureStations();o.base=LS.get('baseConfig',null);o.config=S.config}
+  return pack(o);
+}
+function onSent(id,fn){['-wa','-copy'].forEach(suf=>{const el=document.getElementById(id+suf);if(!el)return;const prevOn=el.onclick;
+  el.addEventListener('click',e=>{if(el.getAttribute('aria-disabled')==='true'){e.preventDefault();return}fn()})})}
+function bindHelfer(app){
+  // Einladung (Zentrale und Co-Admin)
+  if(app.querySelector('#invite-wa')){
+    const run=()=>prepare('invite',()=>{ensureStations();return pack({t:'setup',v:1,config:S.config})},inviteMsg);run();
+    const al=app.querySelector('#app-link');if(al)al.oninput=e=>{const v=e.target.value.trim();const ok=/^https:\/\/\S+$/.test(v);
+      if(v&&!ok)return;S.config.appLink=v;saveConfig();run()};
+  }
+  app.querySelectorAll('[data-notedone]').forEach(b=>b.onclick=async()=>{const n=(S.notesC||[]).find(x=>x.id===b.dataset.notedone);if(!n)return;const v=!n.done;try{await db.doc('notes/'+n.id).update({done:v});S.notesC=S.notesC.map(x=>x.id===n.id?{...x,done:v}:x)}catch{toast('Konnte nicht gespeichert werden')}render()});
+  app.querySelectorAll('[data-notedel]').forEach(b=>b.onclick=async()=>{const id=b.dataset.notedel;try{await db.doc('notes/'+id).delete();S.notesC=S.notesC.filter(x=>x.id!==id)}catch{toast('Löschen fehlgeschlagen')}render()});
+  // Co-Admin einladen (nur Zentrale)
+  const det=app.querySelector('#co-det');if(det)det.ontoggle=()=>{S.coOpen=det.open};
+  if(app.querySelector('#co-wa')){
+    let ct;const upd=()=>{const name=app.querySelector('#co-name').value.trim(),pin=app.querySelector('#co-pin').value.trim();const wa=app.querySelector('#co-wa');
+      if(!name||!/^\d{4,8}$/.test(pin)){wa.setAttribute('aria-disabled','true');prepTok.co=(prepTok.co||0)+1;
+        app.querySelector('#co-hint').textContent=!name?'Name und PIN eintragen, dann tippen.':'PIN muss 4 bis 8 Ziffern haben.';return}
+      app.querySelector('#co-hint').textContent='Die PIN steht nicht in der Nachricht. Sag sie ihm persönlich.';
+      prepare('co',async()=>{ensureStations();return pack({t:'coadmin',v:1,name,pinHash:await pinHash(pin),config:S.config})},c=>coMsg(c,name))};
+    ['#co-name','#co-pin'].forEach(sel=>app.querySelector(sel).oninput=()=>{app.querySelector('#co-wa').setAttribute('aria-disabled','true');clearTimeout(ct);ct=setTimeout(upd,350)});
+  }
+  // Sammel-Code (nur Co-Admin)
+  if(app.querySelector('#sammel-wa')){
+    const list=S.sendAll?S.orders.slice():S.orders.filter(o=>!o.sent),all=!!S.sendAll;
+    prepare('sammel',()=>makeSammel(list,all),c=>closeMsg(c,list,true));
+    onSent('sammel',()=>{const ids=new Set(list.map(o=>o.id));S.orders.forEach(o=>{if(ids.has(o.id))o.sent=true});LS.set('orders',S.orders);LS.set('notes',myNotes().map(n=>({...n,sent:true})));S.sendAll=false;setTimeout(render,800)});
+  }
+  const sa=app.querySelector('#sammel-all');if(sa)sa.onclick=()=>{S.sendAll=true;render()};
+  if(app.querySelector('#note-add')){
+    app.querySelector('#note-add').onclick=()=>{const t=app.querySelector('#note-ta').value.trim();if(!t){toast('Bitte zuerst etwas eintragen');return}
+      const l=myNotes();l.push({id:'n'+deviceId()+'-'+Date.now().toString(36),ts:Date.now(),text:t,from:LS.get('coName',''),sent:false});LS.set('notes',l);toast('Anregung gespeichert');render()};
+    app.querySelectorAll('[data-delnote]').forEach(b=>b.onclick=()=>{LS.set('notes',myNotes().filter(n=>n.id!==b.dataset.delnote));render()});
+    app.querySelector('#re-setup').onclick=()=>{const box=app.querySelector('#opt-box');
+      box.innerHTML=`<div class="card" style="margin-top:10px"><p style="margin:0">Einrichtungs- oder Co-Admin-Code einfügen. Gesammelte Bons bleiben erhalten.</p><textarea id="setup-code" placeholder="Ganze WhatsApp-Nachricht hier einfügen"></textarea><button class="btn primary" id="setup-go">Übernehmen</button><p class="sub" id="setup-err" style="margin:0"></p></div>`;bindSetup()};
+    app.querySelector('#co-leave').onclick=()=>{const box=app.querySelector('#opt-box');const open=S.orders.filter(o=>!o.sent).length;
+      box.innerHTML=`<div class="banner" style="margin-top:10px">${open?`Achtung: ${open} Bons sind noch nicht an die Zentrale übermittelt. `:''}Das Handy wird zur normalen Helfer-Kassa, die Bons bleiben erhalten. <div class="row" style="margin-top:8px"><button class="btn danger" id="leave-yes">Co-Admin beenden</button><button class="btn" id="leave-no">Abbrechen</button></div></div>`;
+      box.querySelector('#leave-no').onclick=()=>box.innerHTML='';
+      box.querySelector('#leave-yes').onclick=()=>{LS.set('role','helper');S.role='helper';S.unlocked=false;S.tab='kassa';render()}};
+  }
+  // Abschluss einlesen (Zentrale und Co-Admin)
+  const chk=app.querySelector('#imp-check');if(!chk)return;
+  chk.onclick=async()=>{
+    const prev=app.querySelector('#imp-prev');let data;
+    try{data=await unpack(app.querySelector('#imp-ta').value)}catch(e){prev.innerHTML=`<p class="neg" style="margin:0">${esc(e.message)}</p>`;return}
+    if(data.t==='setup'||data.t==='coadmin'){prev.innerHTML='<p class="neg" style="margin:0">Das ist ein Einrichtungs-Code, kein Abschluss. Bitte den Abschluss-Code einfügen.</p>';return}
+    if(data.t!=='close'||!Array.isArray(data.orders)){prev.innerHTML='<p class="neg" style="margin:0">Unbekannter Code.</p>';return}
+    const have=new Set(S.orders.map(o=>o.id));
+    const fresh=data.orders.filter(o=>o&&o.id&&/^[A-Za-z0-9_\-.~:@+]{1,200}$/.test(o.id)&&!have.has(o.id)&&Array.isArray(o.lines));
+    const sum=fresh.reduce((a,o)=>a+(+o.total||0),0);
+    const sts=[...new Set(data.orders.map(o=>o.stationName).filter(Boolean))].join(', ');
+    const haveN=new Set((S.notesC||[]).map(n=>n.id));
+    const freshNotes=central()?(Array.isArray(data.notes)?data.notes:[]).filter(n=>n&&n.id&&/^[A-Za-z0-9_\-.~:@+]{1,200}$/.test(n.id)&&!haveN.has(n.id)&&n.text):[];
+    const changes=central()&&data.config&&Array.isArray(data.config.items)?relevantChanges(data.base,data.config,S.config):[];
+    const cfgOk=changes.length>0;
+    S.pendingChanges=changes;
+    prev.innerHTML=`<div class="banner" style="margin:0"><strong>${esc(data.helper||'Ohne Namen')}</strong>${data.coadmin?' <span class="pill">Co-Admin</span>':''}${sts?' · '+esc(sts):''}<br>${data.orders.length} Bons im Code, davon <strong>${fresh.length} neu</strong> · ${eur(sum)}${fresh.length<data.orders.length?'<br><span class="sub">Bereits eingelesene Bons werden übersprungen.</span>':''}
+      ${freshNotes.length?`<div style="margin-top:10px"><strong>${freshNotes.length} Anregung${freshNotes.length>1?'en':''}</strong>${freshNotes.map(n=>`<div class="sub">„${esc(n.text)}“</div>`).join('')}</div>`:''}
+      ${cfgOk?`<div style="margin-top:10px"><strong>Vorgeschlagene Änderungen</strong> <span class="sub">– anhaken, was du übernehmen willst</span>
+        ${changes.map((c,i)=>`<label class="row" style="gap:10px;flex-wrap:nowrap;margin-top:6px;align-items:flex-start"><input type="checkbox" data-chg="${i}" checked style="width:20px;height:20px;flex:0 0 auto;margin-top:2px"><span><span class="pill">${esc(c.grp)}</span> ${esc(c.label)}${c.detail?`<br><span class="sub">${esc(c.detail)}</span>`:''}</span></label>`).join('')}
+        <p class="sub" style="margin:6px 0 0">Nicht angehakte Vorschläge erscheinen beim nächsten Sammel-Code wieder.</p></div>`:''}
+      <div class="row" style="margin-top:8px">${fresh.length||cfgOk||freshNotes.length?'<button class="btn primary" id="imp-go">Übernehmen</button>':''}<button class="btn" id="imp-cancel">${fresh.length||cfgOk||freshNotes.length?'Abbrechen':'Schließen'}</button></div></div>`;
+    prev.querySelector('#imp-cancel').onclick=()=>prev.innerHTML='';
+    const go=prev.querySelector('#imp-go');if(!go)return;
+    go.onclick=async()=>{
+      go.disabled=true;let n=0,tot=0;
+      const picked=[...prev.querySelectorAll('[data-chg]')].filter(x=>x.checked).map(x=>changes[+x.dataset.chg]);
+      for(const o of fresh){
+        const clean={ts:+o.ts||Date.now(),station:String(o.station||''),stationName:String(o.stationName||''),device:String(o.device||data.device||''),helper:String(o.helper||data.helper||''),total:+o.total||0,
+          lines:o.lines.map(l=>({id:String(l.id),name:String(l.name||''),unit:String(l.unit||''),cat:String(l.cat||''),qty:+l.qty||0,price:+l.price||0,cost:+l.cost||0}))};
+        if(central()){try{await db.doc('orders/'+o.id).set(clean);n++;tot+=clean.total;go.textContent=`Übernehme … ${n}/${fresh.length}`}catch(e){toast(e&&e.code==='quota_exceeded'?'Speicher voll':'Ein Bon konnte nicht gespeichert werden');break}}
+        else{S.orders.push({id:o.id,...clean,imported:true,sent:false});n++;tot+=clean.total}
+      }
+      const log={ts:Date.now(),helper:String(data.helper||''),device:String(data.device||''),stations:sts,count:n,total:Math.round(tot*100)/100,coadmin:!!data.coadmin};
+      if(central()){try{await db.collection('imports').add(log)}catch{}
+        for(const nt of freshNotes){try{await db.doc('notes/'+nt.id).set({ts:+nt.ts||Date.now(),text:String(nt.text).slice(0,2000),from:String(nt.from||data.helper||''),done:false})}catch{}}
+        if(picked.length){const c=clone(S.config);picked.forEach(x=>x.apply(c));S.config=c;saveConfig()}}
+      else{LS.set('orders',S.orders);const l=LS.get('imports',[]);l.push(log);LS.set('imports',l)}
+      toast([`${n} Bons übernommen`,freshNotes.length?`${freshNotes.length} Anregungen`:'',picked.length?`${picked.length} Änderungen übernommen`:''].filter(Boolean).join(' · '));render();
+    };
+  };
+}
+
+/* ---------- Helfer: Abschluss ---------- */
+function vAbschluss(){
+  const open=S.orders.filter(o=>!o.sent),sum=a=>a.reduce((s,o)=>s+(+o.total||0),0);
+  const name=LS.get('helper','');const list=S.sendAll?S.orders:open;
+  return `<h2>Abschluss</h2>
+  <div class="kpis">
+    <div class="kpi hero"><div class="l">Noch nicht gesendet</div><div class="v num">${eur(sum(open))}</div><div class="sub" style="color:inherit;opacity:.85">${open.length} Bons</div></div>
+    <div class="kpi"><div class="l">Kassastand laut Bons</div><div class="v num">${eur(sum(S.orders))}</div><div class="sub">${S.orders.length} Bons auf diesem Handy</div></div></div>
+  <div class="card" style="margin-top:12px">
+    <div class="field" style="max-width:320px"><label for="helper-name">Dein Name</label><input type="text" id="helper-name" value="${esc(name)}" placeholder="z. B. Anna"></div>
+    ${list.length?`${waBtn('close-wa',S.sendAll?'Alle Bons nochmal senden':'Abschluss per WhatsApp senden')}
+      <p class="sub" style="margin:0" id="close-hint">${name?'Schick ihn an den Veranstalter. Erst dann sind deine Bons in der Abrechnung.':'Bitte zuerst deinen Namen eintragen.'}</p>${copyFallback('close')}`
+    :`<p style="margin:0">${S.orders.length?'Alles gesendet ✓':'Noch keine Bons gebucht.'}</p>`}
+  </div>
+  <details class="card more" style="margin-top:22px"><summary><strong>Weitere Optionen</strong></summary>
+   <div class="row"><button class="btn" id="resend" ${S.orders.length&&!S.sendAll?'':'disabled'}>Alle Bons nochmal senden</button><button class="btn" id="re-setup">Neuen Code einfügen</button><button class="btn danger" id="wipe" ${S.orders.length&&!open.length?'':'disabled'}>Bons auf diesem Handy löschen</button></div>
+   <div id="opt-box"></div></details>`;
+}
+async function makeClose(list){return pack({t:'close',v:1,device:deviceId(),helper:LS.get('helper',''),orders:list.map(({sent,...o})=>o)})}
+function bindAbschluss(app){
+  const hn=app.querySelector('#helper-name');if(!hn)return;
+  const list=S.sendAll?S.orders.slice():S.orders.filter(o=>!o.sent);
+  const ready=()=>!!LS.get('helper','');
+  const run=()=>{const wa=document.getElementById('close-wa');if(!wa)return;
+    if(!ready()){wa.setAttribute('aria-disabled','true');return}prepare('close',()=>makeClose(list),c=>closeMsg(c,list,false))};
+  let t;hn.oninput=e=>{const v=e.target.value.trim();LS.set('helper',v);S.orders.forEach(o=>{if(!o.sent)o.helper=v});LS.set('orders',S.orders);
+    const h=document.getElementById('close-hint');if(h)h.textContent=v?'Schick ihn an den Veranstalter. Erst dann sind deine Bons in der Abrechnung.':'Bitte zuerst deinen Namen eintragen.';
+    clearTimeout(t);t=setTimeout(run,300)};
+  run();
+  onSent('close',()=>{const ids=new Set(list.map(o=>o.id));S.orders.forEach(o=>{if(ids.has(o.id))o.sent=true});LS.set('orders',S.orders);S.sendAll=false;setTimeout(render,800)});
+  app.querySelector('#resend').onclick=()=>{S.sendAll=true;render();window.scrollTo(0,0)};
+  app.querySelector('#re-setup').onclick=()=>{const box=app.querySelector('#opt-box');
+    box.innerHTML=`<div class="card" style="margin-top:10px"><p style="margin:0">Neue Einladung vom Veranstalter einfügen. Deine Bons bleiben erhalten.</p><textarea id="setup-code" placeholder="Ganze WhatsApp-Nachricht hier einfügen"></textarea><button class="btn primary" id="setup-go">Übernehmen</button><p class="sub" id="setup-err" style="margin:0"></p></div>`;bindSetup()};
+  app.querySelector('#wipe').onclick=()=>{const box=app.querySelector('#opt-box');
+    box.innerHTML=`<div class="banner" style="margin-top:10px">Alle ${S.orders.length} Bons auf diesem Handy werden gelöscht. Sie sind bereits gesendet. <div class="row" style="margin-top:8px"><button class="btn danger" id="wipe-yes">Ja, löschen</button><button class="btn" id="wipe-no">Abbrechen</button></div></div>`;
+    box.querySelector('#wipe-no').onclick=()=>box.innerHTML='';
+    box.querySelector('#wipe-yes').onclick=()=>{S.orders=[];LS.set('orders',[]);toast('Bons gelöscht');render()}};
+}
+function bindSetup(){
+  const go=document.getElementById('setup-go');if(!go)return;
+  go.onclick=async()=>{const err=document.getElementById('setup-err');let data;
+    try{data=await unpack(document.getElementById('setup-code').value)}catch(e){err.textContent=e.message;err.className='neg';return}
+    if((data.t!=='setup'&&data.t!=='coadmin')||!data.config||!Array.isArray(data.config.items)){err.textContent=data.t==='close'?'Das ist ein Abschluss-Code. Bitte den Einrichtungs-Code einfügen.':'Unbekannter Code.';err.className='neg';return}
+    S.config=data.config;LS.set('config',S.config);LS.set('baseConfig',data.config);S.tab='kassa';S.station=null;
+    if(data.t==='coadmin'){LS.set('role','coadmin');LS.set('pinHash',String(data.pinHash||''));LS.set('coName',String(data.name||''));if(!LS.get('helper',''))LS.set('helper',String(data.name||''));S.role='coadmin';S.unlocked=false;toast('Co-Admin eingerichtet')}
+    else toast('Kassa eingerichtet');
+    render()};
+}
+
+/* ---------- Zurücksetzen (Aufbauphase) ---------- */
+function resetOptions(){
+  if(central())return [
+    ['orders',`Verkäufe (${S.orders.length} Bons)`,true],
+    ['imports',`Protokoll eingelesener Abschlüsse (${S.imports.length})`,true],
+    ['notes',`Anregungen (${(S.notesC||[]).length})`,false],
+    ['costs',`Fixkosten (${S.costs.length} Posten)`,false],
+    ['config','Sortiment, Kategorien, Preise und Stationen',false]];
+  const open=S.orders.filter(o=>!o.sent).length;
+  return [
+    ['orders',`Bons auf diesem Handy (${S.orders.length}${open?`, davon ${open} nicht übermittelt`:''})`,true],
+    ['imports',`Protokoll eingelesener Abschlüsse (${LS.get('imports',[]).length})`,true],
+    ['notes',`Anregungen (${myNotes().length})`,false],
+    ['config','Sortiment und Preise (danach Code neu einfügen)',false]];
+}
+function resetSection(){
+  if(!isAdmin())return '';
+  const csv=central()&&downloads&&S.orders.length?`<button class="btn" id="csv">Bons als CSV speichern</button>`:'';
+  let h=`<h2>Daten</h2><div class="row">${csv}<button class="btn danger" id="reset-open">Zurücksetzen …</button></div>`;
+  if(!S.resetOpen)return h;
+  if(central()&&!S.adminPin){
+    return h+`<div class="card" style="margin-top:10px;max-width:420px"><h3 style="margin:0">Admin-PIN festlegen</h3>
+      <p style="margin:0">Zum Zurücksetzen brauchst du eine PIN. Lege sie einmal fest, sie gilt für alle deine Geräte.</p>
+      <div class="row"><div class="field" style="width:140px"><label for="ap1">PIN (4–8 Ziffern)</label><input type="text" inputmode="numeric" id="ap1" autocomplete="off"></div>
+      <div class="field" style="width:140px"><label for="ap2">PIN wiederholen</label><input type="text" inputmode="numeric" id="ap2" autocomplete="off"></div></div>
+      <div class="row"><button class="btn primary" id="ap-save">PIN speichern</button><button class="btn" id="reset-close">Abbrechen</button></div></div>`;
+  }
+  const sel=S.resetSel||(S.resetSel=Object.fromEntries(resetOptions().map(([k,,d])=>[k,d])));
+  return h+`<div class="card" style="margin-top:10px;max-width:480px"><h3 style="margin:0">Was soll gelöscht werden?</h3>
+    ${resetOptions().map(([k,l])=>`<label class="row" style="gap:10px;flex-wrap:nowrap"><input type="checkbox" data-rsel="${k}" ${sel[k]?'checked':''} style="width:20px;height:20px;flex:0 0 auto"><span>${l}</span></label>`).join('')}
+    <p class="sub" style="margin:0">Gelöschte Daten lassen sich nicht wiederherstellen.${central()?' Bons auf den Handys der Helfer bleiben dort; sie löschen sie selbst im Reiter Abschluss.':''}</p>
+    <div class="field" style="width:160px"><label for="rs-pin">${central()?'Admin-PIN':'Co-Admin-PIN'}</label><input type="text" inputmode="numeric" id="rs-pin" autocomplete="off"></div>
+    <div class="row"><button class="btn danger" id="rs-go">Ausgewählte Daten löschen</button><button class="btn" id="reset-close">Abbrechen</button></div>
+    <p class="neg" id="rs-err" style="margin:0"></p></div>`;
+}
+function bindReset(app){
+  const op=app.querySelector('#reset-open');if(!op)return;
+  op.onclick=()=>{S.resetOpen=!S.resetOpen;S.resetSel=null;render()};
+  const cl=app.querySelector('#reset-close');if(cl)cl.onclick=()=>{S.resetOpen=false;S.resetSel=null;render()};
+  app.querySelectorAll('[data-rsel]').forEach(c=>c.onchange=()=>{S.resetSel[c.dataset.rsel]=c.checked});
+  const sv=app.querySelector('#ap-save');
+  if(sv)sv.onclick=async()=>{const a=app.querySelector('#ap1').value.trim(),b=app.querySelector('#ap2').value.trim();
+    if(!/^\d{4,8}$/.test(a)){toast('PIN muss 4 bis 8 Ziffern haben');return}if(a!==b){toast('Die PINs stimmen nicht überein');return}
+    try{await db.doc('settings/admin').set({pinHash:await pinHash(a)});toast('PIN gespeichert')}catch{toast('PIN konnte nicht gespeichert werden')}};
+  const go=app.querySelector('#rs-go');if(!go)return;
+  go.onclick=async()=>{
+    const err=app.querySelector('#rs-err');const sel=Object.entries(S.resetSel||{}).filter(([,v])=>v).map(([k])=>k);
+    if(!sel.length){err.textContent='Bitte mindestens einen Punkt auswählen.';return}
+    const want=central()?S.adminPin:LS.get('pinHash','');
+    if(await pinHash(app.querySelector('#rs-pin').value)!==want){err.textContent='PIN stimmt nicht.';return}
+    go.disabled=true;go.textContent='Lösche …';
+    if(central()){
+      const delAll=async(col,list)=>{for(const x of [...list]){try{await db.doc(col+'/'+x.id).delete()}catch{}}};
+      if(sel.includes('orders'))await delAll('orders',S.orders);
+      if(sel.includes('imports'))await delAll('imports',S.imports);
+      if(sel.includes('costs'))await delAll('costs',S.costs);
+      if(sel.includes('notes'))await delAll('notes',S.notesC||[]);
+      if(sel.includes('config')){clearTimeout(cfgTimer);try{await cfgQueue;await db.doc('config/main').delete()}catch{}S.config=null}
+    }else{
+      if(sel.includes('orders')){S.orders=[];LS.set('orders',[])}
+      if(sel.includes('imports'))LS.set('imports',[]);
+      if(sel.includes('notes'))LS.set('notes',[]);
+      if(sel.includes('config')){S.config=null;LS.set('config',null);S.unlocked=false;S.tab='kassa'}
+    }
+    S.resetOpen=false;S.resetSel=null;S.cart={};toast('Zurückgesetzt');render();window.scrollTo(0,0);
+  };
+}
+
+/* ---------- Reihenfolge: Standard (für alle) + persönlich (dieses Gerät) ---------- */
+function myOrder(){return LS.get('order',{cats:null,items:{}})}
+function applyOrder(list,arr,key){if(!Array.isArray(arr)||!arr.length)return list;const pos=new Map(arr.map((k,i)=>[k,i]));
+  return list.map((x,i)=>[x,i]).sort((a,b)=>(pos.has(key(a[0]))?pos.get(key(a[0])):1e6+a[1])-(pos.has(key(b[0]))?pos.get(key(b[0])):1e6+b[1])).map(x=>x[0])}
+function effCats(){let l=[['eintritt','Eintritt'],...cats()];l=applyOrder(l,S.config?.order?.cats,x=>x[0]);return applyOrder(l,myOrder().cats,x=>x[0])}
+function effItems(k){const c=catalog();let l=k==='eintritt'?ENTRY.map(([id])=>c[id]):(S.config.items||[]).filter(i=>i.cat===k);
+  l=applyOrder(l,S.config?.order?.items?.[k],x=>x.id);return applyOrder(l,myOrder().items?.[k],x=>x.id)}
+function vArrange(has){
+  const arrow=(attr,dis,lbl)=>`<button class="mv" ${attr} ${dis?'disabled':''} aria-label="${lbl}">${lbl.includes('oben')?'↑':'↓'}</button>`;
+  const cs=effCats().filter(([k])=>effItems(k).some(i=>has(i.id)));
+  let h=`<div class="sthead"><h2 style="margin:10px 0">Anordnen</h2><button class="btn primary" id="arr-done">Fertig</button></div>
+   <p class="sub">Verschiebe Kategorien und Artikel mit den Pfeilen. Die Reihenfolge gilt für dieses Handy${isAdmin()?' – oder du übernimmst sie unten als Standard für alle':''}.</p>`;
+  cs.forEach(([k,l],ci)=>{
+    const it=effItems(k).filter(i=>has(i.id));
+    h+=`<div class="arr-cat"><div class="arr-head"><strong>${esc(l)}</strong><span class="mvs">${arrow(`data-mc="${k}" data-d="-1"`,ci===0,'Kategorie nach oben')}${arrow(`data-mc="${k}" data-d="1"`,ci===cs.length-1,'Kategorie nach unten')}</span></div>
+      ${it.map((i,ii)=>`<div class="arr-item"><span>${esc(i.name)}${i.unit?` <span class="sub">${esc(i.unit)}</span>`:''}</span><span class="mvs">${arrow(`data-mi="${i.id}" data-k="${k}" data-d="-1"`,ii===0,'Artikel nach oben')}${arrow(`data-mi="${i.id}" data-k="${k}" data-d="1"`,ii===it.length-1,'Artikel nach unten')}</span></div>`).join('')}</div>`;
+  });
+  const mine=myOrder();const hasMine=(mine.cats&&mine.cats.length)||Object.keys(mine.items||{}).length;
+  h+=`<div class="row" style="margin-top:14px">${hasMine?'<button class="btn" id="arr-reset">Auf Standard zurücksetzen</button>':''}${isAdmin()&&hasMine?'<button class="btn" id="arr-global">Als Standard für alle übernehmen</button>':''}</div>
+   ${isAdmin()&&hasMine?`<p class="sub">${central()?'Der Standard gilt sofort an allen Zentral-Geräten; Helfer bekommen ihn mit dem nächsten Einrichtungs-Code.':'Helfer bekommen den Standard mit deinem nächsten Einrichtungs-Code, die Zentrale über den Sammel-Code mit Sortiment.'}</p>`:''}`;
+  return h;
+}
+function bindArrange(app){
+  const op=app.querySelector('#arr-open');if(op)op.onclick=()=>{S.arrange=true;render()};
+  const dn=app.querySelector('#arr-done');if(!dn)return;
+  dn.onclick=()=>{S.arrange=false;render()};
+  const st=curStation();const has=id=>st.items.includes(id);
+  const swap=(arr,i,d)=>{const j=i+d;if(j<0||j>=arr.length)return arr;[arr[i],arr[j]]=[arr[j],arr[i]];return arr};
+  app.querySelectorAll('[data-mc]').forEach(b=>b.onclick=()=>{
+    // nur sichtbare Kategorien tauschen, unsichtbare behalten ihre Plätze
+    const all=effCats().map(x=>x[0]);const vis=all.filter(k=>effItems(k).some(i=>has(i.id)));
+    const i=vis.indexOf(b.dataset.mc);const nv=swap([...vis],i,+b.dataset.d);let vi=0;
+    const o=myOrder();o.cats=all.map(k=>vis.includes(k)?nv[vi++]:k);LS.set('order',o);render()});
+  app.querySelectorAll('[data-mi]').forEach(b=>b.onclick=()=>{
+    const k=b.dataset.k;const all=effItems(k).map(x=>x.id);const vis=all.filter(has);
+    const i=vis.indexOf(b.dataset.mi);const nv=swap([...vis],i,+b.dataset.d);let vi=0;
+    const o=myOrder();o.items=o.items||{};o.items[k]=all.map(id=>vis.includes(id)?nv[vi++]:id);LS.set('order',o);render()});
+  const rs=app.querySelector('#arr-reset');if(rs)rs.onclick=()=>{LS.set('order',{cats:null,items:{}});toast('Standard-Reihenfolge');render()};
+  const gl=app.querySelector('#arr-global');if(gl)gl.onclick=()=>{
+    const cs=effCats().map(x=>x[0]);const items={};cs.forEach(k=>items[k]=effItems(k).map(i=>i.id));
+    S.config.order={cats:cs,items};LS.set('order',{cats:null,items:{}});saveConfig();toast('Reihenfolge für alle übernommen');render()};
+}
+
+/* ---------- cart & checkout ---------- */
+function renderCart(){
+  const bar=document.getElementById('cartbar');const lines=cartLines();const n=lines.reduce((s,l)=>s+l.qty,0);
+  if(!S.config||S.tab!=='kassa'||S.editSt||S.arrange||!curStation()){bar.hidden=true;return}
+  bar.hidden=false;
+  bar.innerHTML=`<div class="grow"><div class="sum num">${eur(cartTotal())}</div><div class="meta">${n?n+' Position'+(n>1?'en':''):'Artikel antippen'}</div></div>
+   <button class="btn ghost" id="clr" ${n?'':'disabled'}>Leeren</button><button class="btn primary" id="pay" ${n?'':'disabled'}>Abrechnen</button>`;
+  document.getElementById('clr').onclick=()=>{S.cart={};render()};
+  document.getElementById('pay').onclick=openSheet;
+}
+function openSheet(){S.given=null;drawSheet()}
+function drawSheet(){
+  const el=document.getElementById('sheet');const lines=cartLines();
+  if(!lines.length){el.hidden=true;el.innerHTML='';render();return}
+  const t=cartTotal();const opts=[...new Set([10,20,50,100].filter(v=>v>=t))].slice(0,3);
+  el.hidden=false;
+  el.innerHTML=`<div class="sheet" id="bd"><div class="panel" role="dialog" aria-label="Abrechnen">
+   <h2 style="margin-top:0">Abrechnen</h2>
+   ${lines.map(l=>`<div class="line"><span class="nm">${esc(l.name)}${l.unit?` <span class="sub">${esc(l.unit)}</span>`:''}<br><span class="sub num">${eur(l.price)}</span></span><div class="qty"><button data-m="${l.id}" aria-label="weniger">−</button><span class="num" style="min-width:22px;text-align:center">${l.qty}</span><button data-p="${l.id}" aria-label="mehr">+</button></div><strong class="num" style="min-width:70px;text-align:right">${eur(l.qty*l.price)}</strong></div>`).join('')}
+   <div class="total"><span>Summe</span><span class="num">${eur(t)}</span></div>
+   <div class="field"><label for="given">Gegeben €</label><input type="number" step="0.1" min="0" id="given" inputmode="decimal" value="${S.given??''}"></div>
+   <div class="given"><button class="btn" data-g="${t}">passend</button>${opts.map(v=>`<button class="btn" data-g="${v}">${v} €</button>`).join('')}</div>
+   <div class="change" id="chg"><span>Rückgeld</span><span class="num">${S.given!=null&&S.given>=t?eur(S.given-t):'–'}</span></div>
+   <div class="row" style="margin-top:14px"><button class="btn ghost" id="cancel">Zurück</button><button class="btn primary grow" id="done">Bezahlt · ${eur(t)}</button></div>
+  </div></div>`;
+  el.querySelector('#bd').onclick=e=>{if(e.target.id==='bd')closeSheet()};
+  el.querySelector('#cancel').onclick=closeSheet;
+  el.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{S.cart[b.dataset.m]--;drawSheet()});
+  el.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{S.cart[b.dataset.p]++;drawSheet()});
+  el.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{S.given=+b.dataset.g;drawSheet()});
+  el.querySelector('#given').oninput=e=>{S.given=e.target.value===''?null:+e.target.value;const c=el.querySelector('#chg span:last-child');c.textContent=S.given!=null&&S.given>=t?eur(S.given-t):'–'};
+  el.querySelector('#done').onclick=async e=>{
+    e.target.disabled=true;
+    const ls=cartLines().map(l=>({id:l.id,name:l.name,unit:l.unit||'',cat:l.cat,qty:l.qty,price:+l.price||0,cost:+l.cost||0}));
+    const st=curStation();
+    const ok=await addOrder({ts:Date.now(),station:st?.id||'',stationName:st?.name||'',lines:ls,total:Math.round(cartTotal()*100)/100});
+    if(ok){S.cart={};closeSheet();toast('Bon gebucht')}else e.target.disabled=false;
+  };
+}
+function closeSheet(){const el=document.getElementById('sheet');el.hidden=true;el.innerHTML='';render()}
+
+/* ---------- event wiring ---------- */
+function bind(){
+  const app=document.getElementById('app');
+  bindHelfer(app);bindAbschluss(app);bindArrange(app);
+  app.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{S.cart[b.dataset.add]=(S.cart[b.dataset.add]||0)+1;
+    const q=S.cart[b.dataset.add];let c=b.querySelector('.cnt');if(!c){c=document.createElement('span');c.className='cnt num';b.appendChild(c)}c.textContent=q;renderCart()});
+  app.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>setStation(b.dataset.st));
+  const sa=app.querySelector('#st-add');if(sa)sa.onclick=()=>{ensureStations();const id='st'+uid();
+    S.config.stations.push({id,name:'Station '+(S.config.stations.length+1),items:[]});saveConfig();setStation(id);S.editSt=true;render();
+    const i=document.getElementById('st-name');if(i){i.focus();i.select()}};
+  const se=app.querySelector('#st-edit');if(se)se.onclick=()=>{S.editSt=true;render()};
+  const sd=app.querySelector('#st-done');if(sd)sd.onclick=()=>{S.editSt=false;render()};
+  const sn=app.querySelector('#st-name');if(sn)sn.oninput=e=>{curStation().name=e.target.value;const b=app.querySelector(`[data-st="${curStation().id}"]`);if(b)b.textContent=e.target.value||'Station';saveConfig()};
+  app.querySelectorAll('[data-tog]').forEach(b=>b.onclick=()=>{const st=curStation(),id=b.dataset.tog;
+    st.items=st.items.includes(id)?st.items.filter(x=>x!==id):[...st.items,id];b.setAttribute('aria-pressed',st.items.includes(id));delete S.cart[id];saveConfig()});
+  const sx=app.querySelector('#st-del');if(sx)sx.onclick=()=>{const box=app.querySelector('#st-delbox');
+    box.innerHTML=`<div class="banner">Station wird entfernt. Bereits gebuchte Bons bleiben in der Auswertung. <div class="row" style="margin-top:8px"><button class="btn danger" id="st-del-yes">Ja, löschen</button><button class="btn" id="st-del-no">Abbrechen</button></div></div>`;
+    box.querySelector('#st-del-no').onclick=()=>box.innerHTML='';
+    box.querySelector('#st-del-yes').onclick=()=>{const id=curStation().id;S.config.stations=S.config.stations.filter(s=>s.id!==id);S.station=null;S.editSt=false;saveConfig();render()}};
+  app.querySelectorAll('[data-storno]').forEach(b=>b.onclick=()=>{
+    if(b.dataset.armed){delOrder(b.dataset.storno);toast('Bon storniert')}else{b.dataset.armed=1;b.textContent='Sicher?';b.classList.add('danger');setTimeout(()=>{if(b.isConnected){delete b.dataset.armed;b.textContent='Storno';b.classList.remove('danger')}},3000)}});
+  const fn=app.querySelector('#f-name');if(fn)fn.oninput=e=>{S.config.name=e.target.value;app.querySelector('h1').textContent=e.target.value||'Weinfest';saveConfig()};
+  const en=app.querySelector('#e-normal');if(en)en.oninput=e=>{S.config.entry.normal=+e.target.value||0;saveConfig()};
+  const er=app.querySelector('#e-reduced');if(er)er.oninput=e=>{S.config.entry.reduced=+e.target.value||0;saveConfig()};
+  app.querySelectorAll('[data-item] [data-f]').forEach(inp=>{const ev=inp.tagName==='SELECT'?'onchange':'oninput';inp[ev]=e=>{
+    const it=S.config.items.find(i=>i.id===inp.closest('[data-item]').dataset.item);const f=inp.dataset.f;
+    it[f]=(f==='price'||f==='cost')?(+e.target.value||0):e.target.value;saveConfig()}});
+  app.querySelectorAll('[data-delitem]').forEach(b=>b.onclick=()=>{const id=b.dataset.delitem;ensureStations();S.config.items=S.config.items.filter(i=>i.id!==id);S.config.stations.forEach(s=>s.items=s.items.filter(x=>x!==id));delete S.cart[id];saveConfig();render()});
+  app.querySelectorAll('[data-catname]').forEach(inp=>inp.oninput=e=>{const c=(S.config.extraCats||[]).find(x=>x.id===inp.dataset.catname);if(c){c.label=e.target.value||'Ohne Namen';saveConfig()}});
+  app.querySelectorAll('[data-delcat]').forEach(b=>b.onclick=()=>{S.config.extraCats=(S.config.extraCats||[]).filter(x=>x.id!==b.dataset.delcat);saveConfig();render()});
+  const nwCat=app.querySelector('#nw-cat');
+  if(nwCat){
+    ensureStations();
+    const pickSt=()=>{const k=nwCat.value;
+      // vorausgewählt: Stationen, die diese Kategorie schon führen
+      app.querySelector('#nw-st').innerHTML=S.config.stations.map(s=>`<button type="button" data-nwst="${s.id}" aria-pressed="${k==='__new'||S.config.items.some(i=>i.cat===k&&s.items.includes(i.id))}">${esc(s.name)}</button>`).join('')||'<span class="sub">Keine Stationen angelegt</span>';
+      app.querySelectorAll('[data-nwst]').forEach(b=>b.onclick=()=>b.setAttribute('aria-pressed',b.getAttribute('aria-pressed')!=='true'))};
+    nwCat.onchange=()=>{const isNew=nwCat.value==='__new';app.querySelector('#nw-newcat-wrap').hidden=!isNew;
+      if(isNew){app.querySelector('#nw-unit').value='';app.querySelector('#nw-newcat').focus()}else app.querySelector('#nw-unit').value=unitFor(nwCat.value);pickSt()};
+    pickSt();
+    app.querySelector('#nw-add').onclick=()=>{
+      let k=nwCat.value;const name=app.querySelector('#nw-name').value.trim(),vk=app.querySelector('#nw-vk').value,ek=app.querySelector('#nw-ek').value;
+      if(k==='__new'){
+        const label=app.querySelector('#nw-newcat').value.trim();
+        if(!label){toast('Bitte einen Namen für die Kategorie eintragen');app.querySelector('#nw-newcat').focus();return}
+        const ex=cats().find(([,l])=>l.toLowerCase()===label.toLowerCase());
+        if(ex)k=ex[0];else{if(!name||vk==='')return toast(!name?'Bitte einen Namen eintragen':'Bitte den Verkaufspreis eintragen');
+          k='c'+uid();(S.config.extraCats=S.config.extraCats||[]).push({id:k,label,unit:app.querySelector('#nw-unit').value.trim()})}
+      }
+      if(!name){toast('Bitte einen Namen eintragen');app.querySelector('#nw-name').focus();return}
+      if(vk===''){toast('Bitte den Verkaufspreis eintragen');app.querySelector('#nw-vk').focus();return}
+      const id=k[0]+uid();const it={id,cat:k,name,unit:app.querySelector('#nw-unit').value.trim(),price:+vk||0,cost:+ek||0};if(k==='wein')it.art='weiss';
+      const sel=[...app.querySelectorAll('[data-nwst][aria-pressed="true"]')].map(b=>b.dataset.nwst);
+      S.config.items.push(it);S.config.stations.forEach(s=>{if(sel.includes(s.id))s.items.push(id)});
+      saveConfig();render();toast(name+' hinzugefügt');
+      const n=document.getElementById('nw-cat');if(n){n.value=k;n.onchange()}const nm=document.getElementById('nw-name');if(nm)nm.focus()};
+  }
+  const ka=app.querySelector('#k-add');if(ka)ka.onclick=()=>{const n=app.querySelector('#k-name').value.trim(),a=+app.querySelector('#k-amt').value;
+    if(!n||!(a>0)){toast('Bitte Posten und Betrag eingeben');return}addCost({name:n,amount:a,ts:Date.now()});app.querySelector('#k-name').value='';app.querySelector('#k-amt').value=''};
+  app.querySelectorAll('[data-delcost]').forEach(b=>b.onclick=()=>delCost(b.dataset.delcost));
+  const csv=app.querySelector('#csv');if(csv)csv.onclick=async()=>{
+    const rows=[['Zeit','Station','Bon','Artikel','Menge','Kategorie','Preis','Summe']];
+    [...S.orders].sort((a,b)=>a.ts-b.ts).forEach((o,i)=>o.lines.forEach(l=>rows.push([new Date(o.ts).toLocaleString('de-AT'),o.stationName||'',i+1,l.name+(l.unit?' '+l.unit:''),l.qty,l.cat,String(l.price).replace('.',','),String((l.qty*l.price).toFixed(2)).replace('.',',')])));
+    const txt='﻿'+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(';')).join('\r\n');
+    try{await downloads.save({filename:'weinfest-bons.csv',data:new Blob([txt],{type:'text/csv'})})}catch{toast('Datei wurde nicht gespeichert')}};
+  bindReset(app);
+}
+render();init();
+</script>
+
+</body></html>
